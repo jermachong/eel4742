@@ -78,156 +78,114 @@
 //        }
 //    }
 
-// Firefighter pattern 1: fast four, slow three, fast four ...
+// // Firefighter pattern 1: fast four, slow three, fast four ...
+// void main(void) {
+//   volatile uint32_t i;
+//   volatile unsigned int j, k, x;
+
+//   WDTCTL = WDTPW | WDTHOLD;
+//   PM5CTL0 &= ~LOCKLPM5;
+
+//   P1DIR |= redLED;
+//   P1OUT &= ~redLED;
+//   P9DIR |= greenLED;
+//   P9OUT &= ~greenLED;
+
+//   for (;;) {
+//     // Fast alternating (4 cycles)
+//     for (j = 0; j < 4; j++) {
+//       for (k = 0; k < 2; k++) {
+//         for (x = 0; x < 16; x++) {
+//           if (k == 0)
+//             P1OUT ^= redLED;
+//           else
+//             P9OUT ^= greenLED;
+//           for (i = 0; i < 1000; i++);
+//         }
+//         for (i = 0; i < 10000; i++);
+//       }
+//     }
+
+//     // Slow alternating (3 cycles)
+//     for (j = 0; j < 3; j++) {
+//       for (k = 0; k < 2; k++) {
+//         for (x = 0; x < 32; x++) {
+//           if (k == 0)
+//             P1OUT ^= redLED;
+//           else
+//             P9OUT ^= greenLED;
+//           for (i = 0; i < 1000; i++);
+//         }
+//         for (i = 0; i < 20000; i++);
+//       }
+//     }
+//   }
+// }
+
+// Firefighter pattern 2: slow alternate, fast alternate, simultaneous
 void main(void) {
-  volatile uint32_t i; // unsigned int 32-bit type to hold larger int
-  int short_red = 0;
-  int short_green = 0;
-  volatile unsigned int j;
-  volatile unsigned int k;
-  volatile unsigned int x;
-  volatile unsigned int y;
-  volatile unsigned int z;
+  volatile uint32_t i;
+  volatile unsigned int j, k, x, y, z;
 
   WDTCTL = WDTPW | WDTHOLD; // Stop the Watchdog timer
-  PM5CTL0 &= ~LOCKLPM5;     // Disable GPIO power-on default high-impedance mode
+  PM5CTL0 &= ~LOCKLPM5; // Disable GPIO power-on default high-impedance mode
 
-  P1DIR |= redLED;  // Direct pin as output
+  P1DIR |= redLED; // Direct pin as output
   P1OUT &= ~redLED; // Turn LED Off
   P9DIR |= greenLED;
   P9OUT &= ~greenLED;
 
-  for (;;) {
-
-    // faster alternating
-    for (j = 0; j < 4; j++) {
-
-      // Fast Red Blinks (4 times = 8 toggles)
-      for (short_red = 0; short_red < 16; short_red++) {
+  for(;;){
+    _delay_cycles(10000);
+    
+    // Slow alternating pattern
+    for(j = 0; j < 16; j++) {
+      for(x = 0; x < 3; x++) {
+        _delay_cycles(10000);
         P1OUT ^= redLED;
-        for (i = 0; i < 1000; i++)
-          ; // Simple delay
       }
-
-      // Small gap between colors
-      for (i = 0; i < 10000; i++)
-        ;
-
-      // Fast Green Blinks (4 times = 8 toggles)
-      for (short_green = 0; short_green < 16; short_green++) {
+      _delay_cycles(200000);
+      for(y = 0; y < 3; y++) {
+        _delay_cycles(10000);
         P9OUT ^= greenLED;
-        for (i = 0; i < 1000; i++)
-          ; // Simple delay
       }
-
-      // Small gap between colors
-      for (i = 0; i < 10000; i++)
-        ;
     }
-
-    // slower alternating
-    for (j = 0; j < 3; j++) {
-      // Fast Red Blinks (4 times = 8 toggles)
-      for (short_red = 0; short_red < 32; short_red++) {
+    
+    // Fast alternating pattern
+    for(k = 0; k < 7; k++) {
+      for(x = 0; x < 3; x++) {
+        _delay_cycles(10000);
         P1OUT ^= redLED;
-        for (i = 0; i < 1000; i++)
-          ; // Simple delay
       }
-
-      // longer gap between colors
-      for (i = 0; i < 20000; i++)
-        ;
-
-      // Fast Green Blinks (4 times = 8 toggles)
-      for (short_green = 0; short_green < 32; short_green++) {
+      _delay_cycles(50000);
+      for(y = 0; y < 3; y++) {
+        _delay_cycles(10000);
         P9OUT ^= greenLED;
-        for (i = 0; i < 1000; i++)
-          ; // Simple delay
       }
-
-      // longer gap between colors
-      for (i = 0; i < 20000; i++);
     }
+    
+    // Very fast alternating pattern
+    for(k = 0; k < 5; k++) {
+      for(x = 0; x < 3; x++) {
+        _delay_cycles(10000);
+        P1OUT ^= redLED;
+      }
+      _delay_cycles(35000);
+      for(y = 0; y < 3; y++) {
+        _delay_cycles(10000);
+        P9OUT ^= greenLED;
+      }
+    }
+    
+    _delay_cycles(17000);
+    
+    // Simultaneous toggling pattern
+    for(z = 0; z < 6; z++){
+      _delay_cycles(10000);
+      P1OUT ^= redLED;
+      P9OUT ^= greenLED;
+    }
+    
+    _delay_cycles(10000);
   }
 }
-
-// // Firefighter pattern 2: slow alternate, fast alternate, simultaneous
-//     void main(void) {
-//         volatile uint32_t i; // unsigned int 32-bit type to hold larger int
-
-//         volatile unsigned int j;
-//         volatile unsigned int k;
-//         volatile unsigned int x;
-//         volatile unsigned int y;
-//         volatile unsigned int z;
-
-//         WDTCTL = WDTPW | WDTHOLD; // Stop the Watchdog timer
-//         PM5CTL0 &= ~LOCKLPM5; // Disable GPIO power-on default high-impedance
-//         mode
-
-//         P1DIR |= redLED; // Direct pin as output
-//         P1OUT &= ~redLED; // Turn LED Off
-//         P9DIR |= greenLED;
-//         P9OUT &= ~greenLED;
-
-//         for(;;){
-//             _delay_cycles(10000);
-//             // alternate
-//             for( j = 0; j < 16; j++) {
-//                     for( x = 0; x < 3; x++) {
-//                         _delay_cycles(10000);
-//                         P1OUT ^= redLED; // Toggle the LED
-
-//                     }
-
-//                     _delay_cycles(200000);
-
-//                     for( y = 0; y < 3; y++) {
-//                         _delay_cycles(10000);
-//                         P9OUT ^= greenLED;
-
-//                 }
-//             }
-//             // faster alternate
-//             for( k = 0; k < 7; k++) {
-//                     for( x = 0; x < 3; x++) {
-//                         _delay_cycles(10000);
-//                         P1OUT ^= redLED; // Toggle the LED
-
-//                     }
-
-//                     _delay_cycles(50000);
-
-//                     for( y = 0; y < 3; y++) {
-//                         _delay_cycles(10000);
-//                         P9OUT ^= greenLED;
-
-//                 }
-//             }
-//             // really fast alternate
-//             for( k = 0; k < 5; k++) {
-//                     for( x = 0; x < 3; x++) {
-//                         _delay_cycles(10000);
-//                         P1OUT ^= redLED; // Toggle the LED
-
-//                     }
-
-//                     _delay_cycles(35000);
-
-//                     for( y = 0; y < 3; y++) {
-//                         _delay_cycles(10000);
-//                         P9OUT ^= greenLED;
-
-//                 }
-//             }
-//             _delay_cycles(17000);
-//             // simultaneous
-//             for(z = 0; z < 6; z++){
-//                     for(i=0; i<10000; i++) {}
-
-//                     P1OUT ^= redLED; // Toggle the LED
-//                     P9OUT ^= greenLED;
-//             }
-//             _delay_cycles(10000);
-//         }
-//     }
