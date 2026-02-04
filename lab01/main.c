@@ -88,10 +88,9 @@ void main(void) {
   volatile unsigned int z;
 
   WDTCTL = WDTPW | WDTHOLD; // Stop the Watchdog timer
-  PM5CTL0 &= ~LOCKLPM5;     // Disable GPIO power-on default high-impedance
-  mode
+  PM5CTL0 &= ~LOCKLPM5;     // Disable GPIO power-on default high-impedance mode
 
-      P1DIR |= redLED; // Direct pin as output
+  P1DIR |= redLED; // Direct pin as output
   P1OUT &= ~redLED;    // Turn LED Off
   P9DIR |= greenLED;
   P9OUT &= ~greenLED;
