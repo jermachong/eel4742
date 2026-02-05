@@ -121,3 +121,43 @@ int main(void) {
         }
     }
 }
+// 2.4: Electric Load Generator (v2)
+// if button is pressed and another button is already running, turn off both LEDS
+// until both buttons are released
+// int main(void) {
+
+//     volatile uint32_t i;
+
+//     WDTCTL = WDTPW | WDTHOLD; // Stop the Watchdog timer
+//     PM5CTL0 &= ~LOCKLPM5;     // Disable GPIO power-on default high-impedance
+
+//     // Configure and initialize LEDs
+//     P1DIR |= redLED; // Direct pin as output
+//     P9DIR |= greenLED; // Direct pin as output
+//     P1OUT &= ~redLED; // Turn LED Off
+//     P9OUT &= ~greenLED; // Turn LED Off
+
+//     // Configure buttons
+//     P1DIR &= ~BUT1; // Direct pin as input
+//     P1REN |= BIT1;        // Enable built-in resistor
+//     P1OUT |= BIT1;    // Set resistor as pull-up
+//     P1DIR &= ~BUT2; // Direct pin as input
+//     P1REN |= BIT2;        // Enable built-in resistor
+//     P1OUT |= BIT2;    // Set resistor as pull-up
+
+//     // Polling the button in an infinite loop
+//     for (;;) {
+//         if ((P1IN * BUT1)==0 && (P1IN * BUT2)!=0) { // button 1 is pushed
+//             P1OUT |= redLED;    
+//             P9OUT &= ~greenLED; // Turn LED Off
+//         }
+//         else if ((P1IN * BUT2)==0 && (P1IN * BUT1)!=0) { // button 2 is pushed
+//             P9OUT |= greenLED;        
+//             P1OUT &= ~redLED; // Turn LED Off
+//         }
+//         else {
+//             P1OUT &= ~redLED; // Turn LED Off
+//             P9OUT &= ~greenLED; // Turn LED Off
+//         }
+//     }
+// }
