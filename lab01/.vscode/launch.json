@@ -1,0 +1,13 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "C/C++ Runner: Debug Session",
+      "type": "lldb",
+      "request": "launch",
+      "args": [],
+      "cwd": "/Users/Owner/workspace-school/eel4742/lab01",
+      "program": "/Users/Owner/workspace-school/eel4742/lab01/build/Debug/outDebug"
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+---
+triple:          'arm64-apple-darwin'
+binary-path:     '/Users/Owner/workspace-school/eel4742/hw/hw1/p1'
+relocations:     []
+...
