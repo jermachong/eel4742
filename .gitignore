@@ -1,0 +1,7 @@
+# ignore everything, except for main.c files.
+*
+!.gitignore
+!/hw
+!/lab01/main.c
+!/lab02/main.c
+!/lab03/main.c
