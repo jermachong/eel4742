@@ -1,9 +1,21 @@
-# ignore everything, except for main.c files.
+# 1. Ignore everything by default
 *
-/lab01/Debug/
-/lab02/Debug/
+
+# 2. Allow Git to look into directories (The "Parent Directory" Fix)
+!*/
+
+# 3. Whitelist the files you actually want
 !.gitignore
-!/hw
-!/lab01/main.c
-!/lab02/main.c
-!/lab03/main.c
+!/hw/**
+!/**/main.c
+!/**/lnk_msp430fr6889.cmd
+
+# 4. Explicitly re-ignore IDE and Build folders
+# This stops Git from tracking CCS, VS Code, and Theia settings
+.vscode/
+.theia/
+.clangd/
+**/Debug/
+**/.ccsproject
+**/.project
+**/.settings/
