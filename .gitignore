@@ -6,7 +6,7 @@
 
 # 3. Whitelist the files you actually want
 !.gitignore
-!/hw/**
+/hw/
 !/**/main.c
 !/**/lnk_msp430fr6889.cmd
 
