@@ -5,7 +5,6 @@
 !*/
 
 # 3. Whitelist the files you actually want
-!.gitignore
 /hw/
 !/**/main.c
 !/**/lnk_msp430fr6889.cmd
@@ -16,6 +15,6 @@
 .theia/
 .clangd/
 **/Debug/
-**/.ccsproject
-**/.project
-**/.settings/
+# **/.ccsproject
+# **/.project
+# **/.settings/
