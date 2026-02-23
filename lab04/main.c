@@ -13,30 +13,19 @@
 
 int main(void) {
 
-    volatile uint32_t i;
+  WDTCTL = WDTPW | WDTHOLD; // Stop WDT
+  PM5CTL0 &= ~LOCKLPM5;
 
-    // Stop watchdog timer
-    WDT_A_hold(WDT_A_BASE);
+  // Configure GPIO
+  P1DIR |= redLED; // Clear P1.0 output latch for a defined power-on state
+  P1OUT &= ~redLED;   // Turn LED Off
+  P9DIR |= greenLED;
+  P9OUT &= ~greenLED;
 
-    // Set P1.0 to output direction
-    GPIO_setAsOutputPin(
-        GPIO_PORT_P1,
-        GPIO_PIN0
-        );
-
-    // Disable the GPIO power-on default high-impedance mode
-    // to activate previously configured port settings
-    PMM_unlockLPM5();
-
-    while(1)
-    {
-        // Toggle P1.0 output
-        GPIO_toggleOutputOnPin(
-            GPIO_PORT_P1,
-			GPIO_PIN0
-			);
-
-        // Delay
-        for(i=10000; i>0; i--);
-    }
+  P1DIR &= ~BUT1; // Direct pin as input
+  P1REN |= BIT1;        // Enable built-in resistor
+  P1OUT |= BIT1;    // Set resistor as pull-up
+  P1DIR &= ~BUT2; // Direct pin as input
+  P1REN |= BIT2;        // Enable built-in resistor
+  P1OUT |= BIT2;    // Set resistor as pull-up
 }
