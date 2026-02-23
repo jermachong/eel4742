@@ -31,75 +31,76 @@ void config_ACLK_to_32KHz_crystal() {
 
 // Part 1: Using ACLK, 32KHz crystal, continous mode
 
-//int main(void) {
+// int main(void) {
 //  WDTCTL = WDTPW | WDTHOLD; // Stop WDT
-//
+
 //  // Configure GPIO
 //  P1DIR |= BIT0; // Clear P1.0 output latch for a defined power-on state
 //  P1OUT &= ~redLED;   // Turn LED Off
-//
+
 //  PM5CTL0 &= ~LOCKLPM5; // Disable the GPIO power-on default high-impedance mode
 //                        // to activate previously configured port settings
-//
+
 //  // Configure ACLK to the 32 KHz crystal
 //  config_ACLK_to_32KHz_crystal();
-//
+
 //  // Configre Timer_A
 //  // use ACLK, divide by 1, continous mode, clear TAR
 //  TA0CTL = TASSEL_1 | ID_1 | MC_2 | TACLR;
-//
+
 //  // Ensure flag is cleared at the start
 //  TA0CTL &= ~TAIFG; // AND with inverse of mask to clear the bit
-//
+
 //  // build in RC oscillator running at a freq of 4.8 MHz / 128 = 37.5 KHz.
-//
+
 //  for(;;) {
 //    // wait for flag to be raised
 //    while((TA0CTL & TAIFG)==0){} // wait for flag to become 1
 //    P1OUT ^= BIT0;
 //    TA0CTL &= ~TAIFG; // AND with inverse of mask to clear the bit
 //  }
-//}
+// }
 
-//Part 2: Using Up Mode
+// Part 2: Using Up Mode
 
-//int main(void) {
+// int main(void) {
 //  WDTCTL = WDTPW | WDTHOLD; // Stop WDT
-//
+
 //  // Configure GPIO
 //  P1DIR |= BIT0; // Clear P1.0 output latch for a defined power-on state
 //  P1OUT &= ~redLED;   // Turn LED Off
-//
+
 //  PM5CTL0 &= ~LOCKLPM5; // Disable the GPIO power-on default high-impedance mode
 //                        // to activate previously configured port settings
-//
+
 //  // Configure ACLK to the 32 KHz crystal
 //  config_ACLK_to_32KHz_crystal();
-//
+
 //  // Set timer period
 //  TA0CCR0 = 3277;
-//
+
 //  // Configure Timer_A
 //  // use ACLK, divide by 1, up mode, clear TAR
 //  TA0CTL = TASSEL_1 | ID_0 | MC_1 | TACLR;
-//
+
 //  // Ensure flag is cleared at the start
 //  TA0CTL &= ~TAIFG; // AND with inverse of mask to clear the bit
-//
+
 //  // build in RC oscillator running at a freq of 4.8 MHz / 128 = 37.5 KHz.
-//
+
 //  for(;;) {
 //    // wait for flag to be raised
 //    while((TA0CTL & TAIFG)==0){} // wait for flag to become 1
 //    P1OUT ^= BIT0;
 //    TA0CTL &= ~TAIFG; // AND with inverse of mask to clear the bit
 //  }
-//}
+// }
 
 //Part 3: Signal Repeater
 
 int main(void) {
   WDTCTL = WDTPW | WDTHOLD; // Stop WDT
+  PM5CTL0 &= ~LOCKLPM5;
 
   // Configure GPIO
   P1DIR |= redLED; // Clear P1.0 output latch for a defined power-on state
@@ -107,8 +108,6 @@ int main(void) {
   P9DIR |= greenLED;
   P9OUT &= ~greenLED;
 
-  PM5CTL0 &= ~LOCKLPM5; // Disable the GPIO power-on default high-impedance mode
-                        // to activate previously configured port settings
 
   P1DIR &= ~BUT1; // Direct pin as input
   P1REN |= BIT1;        // Enable built-in resistor
@@ -121,11 +120,10 @@ int main(void) {
   config_ACLK_to_32KHz_crystal();
 
   // Configure Timer_A
-  // use ACLK, divide by 1, continous mode, clear TAR
   unsigned int limit = 65534; // max supported cycles
   // results in 2 second delay with div by 1
   // results in 4 second delay with div by 2
-  TA0CTL = TASSEL_1 | ID_1 | MC_2 | TACLR;
+  TA0CTL = TASSEL_1 | ID_0 | MC_2 | TACLR; // use ACLK, divide by 1, continous mode, clear TAR
 
   // Ensure flag is cleared at the start
   TA0CTL &= ~TAIFG; // AND with inverse of mask to clear the bit
@@ -153,7 +151,7 @@ int main(void) {
     
     unsigned int duration = TA0R; // save the value that TAR reached
 
-    P1OUT |= BIT0; // turn on LED
+    P1OUT |= redLED; // turn on LED
     TA0CTL |= TACLR; // start timer at 0
 
     while(TA0R <= duration){} // delay until TAR reaches TA0CCR0
