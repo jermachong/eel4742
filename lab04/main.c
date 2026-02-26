@@ -108,6 +108,50 @@ void config_ACLK_to_32KHz_crystal() {
 // }
   
 // Part 3: Push Button with Interrupt
+// int main(void) {
+
+//   WDTCTL = WDTPW | WDTHOLD; // Stop WDT
+//   PM5CTL0 &= ~LOCKLPM5;
+
+//   // Configure GPIO
+//   P1DIR |= redLED; // Clear P1.0 output latch for a defined power-on state
+//   P1OUT &= ~redLED;   // Turn LED Off
+//   P9DIR |= greenLED;
+//   P9OUT &= ~greenLED;
+  
+//   P1DIR &= ~(BUT1|BUT2);  //0: Direct pin as input
+//   P1REN |= (BUT1|BUT2);   //1: Enable built-in resistor
+//   P1OUT |= (BUT1|BUT2);   //1: Set resistor as pull-up
+//   P1IES |= (BUT1|BUT2);   //1: interrupt on falling edge (0 for rising edge)
+//   P1IFG &= ~(BUT1|BUT2);  //0: clear the interrupt flags
+//   P1IE  |= (BUT1|BUT2);   //1: enable the interrupts
+
+//   // Enable the global interrupt bit
+//   __enable_interrupt();
+
+//   // infinite loop, waits between interrupts
+//   for(;;){}
+
+// }
+
+// // ** Writing the ISR **
+// #pragma vector = PORT1_VECTOR // Link the ISR to the vector
+// __interrupt void P1_ISR() {
+//   // Detect button 1 interrupt flag
+//   if((P1IFG & BUT1) !=0 ) {
+//     P1OUT ^= redLED; // toggle LED
+//     P1IFG &= ~BUT1; // clear button 1 interrupt flag
+//     __delay_cycles(200000);
+//   }
+//   // Detect button 2 interrupt flag
+//   if((P1IFG & BUT2) !=0 ) {
+//     P9OUT ^= greenLED; // toggle LED
+//     P1IFG &= ~BUT2; // clear button 2 interrupt flag
+//     __delay_cycles(200000);
+//   }
+// }
+
+// Part 4: Lower-Power Modes
 int main(void) {
 
   WDTCTL = WDTPW | WDTHOLD; // Stop WDT
@@ -126,11 +170,8 @@ int main(void) {
   P1IFG &= ~(BUT1|BUT2);  //0: clear the interrupt flags
   P1IE  |= (BUT1|BUT2);   //1: enable the interrupts
 
-  // Enable the global interrupt bit
-  __enable_interrupt();
-
-  // infinite loop, waits between interrupts
-  for(;;){}
+  // engage low power mode
+  _low_power_mode_4(); // auto enables interrupt
 
 }
 
@@ -150,3 +191,5 @@ __interrupt void P1_ISR() {
     __delay_cycles(200000);
   }
 }
+
+// Part 5: Application: Crawler Guidance System
