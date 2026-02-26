@@ -152,6 +152,49 @@ void config_ACLK_to_32KHz_crystal() {
 // }
 
 // Part 4: Lower-Power Modes
+// int main(void) {
+
+//   WDTCTL = WDTPW | WDTHOLD; // Stop WDT
+//   PM5CTL0 &= ~LOCKLPM5;
+
+//   // Configure GPIO
+//   P1DIR |= redLED; // Clear P1.0 output latch for a defined power-on state
+//   P1OUT &= ~redLED;   // Turn LED Off
+//   P9DIR |= greenLED;
+//   P9OUT &= ~greenLED;
+  
+//   P1DIR &= ~(BUT1|BUT2);  //0: Direct pin as input
+//   P1REN |= (BUT1|BUT2);   //1: Enable built-in resistor
+//   P1OUT |= (BUT1|BUT2);   //1: Set resistor as pull-up
+//   P1IES |= (BUT1|BUT2);   //1: interrupt on falling edge (0 for rising edge)
+//   P1IFG &= ~(BUT1|BUT2);  //0: clear the interrupt flags
+//   P1IE  |= (BUT1|BUT2);   //1: enable the interrupts
+
+//   // engage low power mode
+//   _low_power_mode_4(); // auto enables interrupt
+
+// }
+
+// // ** Writing the ISR **
+// #pragma vector = PORT1_VECTOR // Link the ISR to the vector
+// __interrupt void P1_ISR() {
+//   // Detect button 1 interrupt flag
+//   if((P1IFG & BUT1) !=0 ) {
+//     P1OUT ^= redLED; // toggle LED
+//     P1IFG &= ~BUT1; // clear button 1 interrupt flag
+//     __delay_cycles(200000);
+//   }
+//   // Detect button 2 interrupt flag
+//   if((P1IFG & BUT2) !=0 ) {
+//     P9OUT ^= greenLED; // toggle LED
+//     P1IFG &= ~BUT2; // clear button 2 interrupt flag
+//     __delay_cycles(200000);
+//   }
+// }
+
+// Part 5: Application: Crawler Guidance System
+int left=0, right = 0;
+int_fast8_t redEnabled =1, greenEnabled = 1;
 int main(void) {
 
   WDTCTL = WDTPW | WDTHOLD; // Stop WDT
@@ -170,26 +213,107 @@ int main(void) {
   P1IFG &= ~(BUT1|BUT2);  //0: clear the interrupt flags
   P1IE  |= (BUT1|BUT2);   //1: enable the interrupts
 
+  // configure ACLK to the 32KHz crystal
+  config_ACLK_to_32KHz_crystal();
+  
+  // Configure Channel 0 for up mode with interrupts
+  TA0CCR0 = 32768; // 1 second @ 32 KHz, for 0.5 s set to 16384, for 0.1 s set to 3276
+  TA0CCTL0 |= CCIE; // Enable Channel 0 CCIE bit
+  TA0CCTL0 &= ~CCIFG; // Clear Channel 0 CCIFG bit
+
+  //Configure Timer_A: divide by 1, continuous mode, TAR cleared, enable interrupt for rollback-to-zero
+  TA0CTL = TASSEL_1 | ID_0 | MC_1 | TACLR ; // use ACLK, divide by 1, continous mode, clear TAR
+  // TAIE is not set to 1 because we are using a different flag (CCIE, which compares TAR to TACCR0)
+  
+
   // engage low power mode
-  _low_power_mode_4(); // auto enables interrupt
+  _low_power_mode_3(); // auto enables interrupt
 
 }
 
-// ** Writing the ISR **
+// ** Writing the ISRS **
+#pragma vector = TIMER0_A0_VECTOR // Link the ISR to the vector
+__interrupt void T0A0_ISR() {
+  // Interrupt response goes here
+  if(redEnabled)
+    P1OUT ^= redLED; // toggle LED
+  if(greenEnabled)
+    P9OUT ^= greenLED; // toggle LED
+  
+}
+
 #pragma vector = PORT1_VECTOR // Link the ISR to the vector
 __interrupt void P1_ISR() {
+
   // Detect button 1 interrupt flag
+  // left steering
   if((P1IFG & BUT1) !=0 ) {
-    P1OUT ^= redLED; // toggle LED
-    P1IFG &= ~BUT1; // clear button 1 interrupt flag
+    if(right > 0) // right is activated
+    {  
+      right --;
+      if(right == 0)
+      {  
+        greenEnabled = 1; // re-enable right
+        P9OUT &= ~greenLED;
+      }
+      P1IFG &= ~(BUT1|BUT2); // clear buttons interrupt flag
+      return;
+    }
+      
+    if(left == 0 && right == 0) // first left (R+)
+    {
+      greenEnabled = 0; // disable right (greenLED)
+      TA0CCR0 = 16384;// speed up timer
+      left++;
+    }
+    else if (left == 1) // second left (R++)
+    {
+      TA0CCR0 = 16384/2; // speed up timer
+      left++;
+    }
+    else if (left == 2) // third left (R+++)
+    {
+      // speed up timer to max freq
+      TA0CCR0 = 16384/4;// speed up timer
+      left = 2; // max reached
+    }
     __delay_cycles(200000);
   }
   // Detect button 2 interrupt flag
+  // right steering
   if((P1IFG & BUT2) !=0 ) {
-    P9OUT ^= greenLED; // toggle LED
-    P1IFG &= ~BUT2; // clear button 2 interrupt flag
+    if(left > 0) // right is activated
+    {  
+      left --;
+      if(left == 0)
+        {
+          redEnabled = 1; // re-enable right
+          P1OUT &= ~redLED;
+        }
+        P1IFG &= ~(BUT1|BUT2); // clear buttons interrupt flag  
+      return;
+    }
+      
+    if(left == 0 && right == 0) // first left (R+)
+    {
+      redEnabled = 0; // disable right (greenLED)
+      TA0CCR0 = 16384;// speed up timer
+      right++;
+    }
+    else if (right == 1) // second left (R++)
+    {
+      TA0CCR0 = 16384/2; // speed up timer
+      right++;
+    }
+    else if (right == 2) // third left (R+++)
+    {
+      // speed up timer to max freq
+      TA0CCR0 = 16384/4;// speed up timer
+      right = 2; // max reached
+    }
     __delay_cycles(200000);
   }
-}
 
-// Part 5: Application: Crawler Guidance System
+  P1IFG &= ~(BUT1|BUT2); // clear buttons interrupt flag
+
+}
