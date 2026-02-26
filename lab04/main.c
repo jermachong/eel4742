@@ -28,7 +28,7 @@ void config_ACLK_to_32KHz_crystal() {
   return;
 }
 
-// // Part 1: flash the LEDs in continuous mode using interrupt
+// Part 1: flash the LEDs in continuous mode using interrupt
 // int main(void) {
 
 //   WDTCTL = WDTPW | WDTHOLD; // Stop WDT
@@ -69,6 +69,45 @@ void config_ACLK_to_32KHz_crystal() {
 // }
 
 // Part 2: Timer's Up Mode with Interrupt
+// int main(void) {
+
+//   WDTCTL = WDTPW | WDTHOLD; // Stop WDT
+//   PM5CTL0 &= ~LOCKLPM5;
+
+//   // Configure GPIO
+//   P1DIR |= redLED; // Clear P1.0 output latch for a defined power-on state
+//   P1OUT &= ~redLED;   // Turn LED Off
+
+//   // configure ACLK to the 32KHz crystal
+//   config_ACLK_to_32KHz_crystal();
+  
+//   // Configure Channel 0 for up mode with interrupts
+//   TA0CCR0 = 32768-1; // 1 second @ 32 KHz, for 0.5 s set to 16384, for 0.1 s set to 3276
+//   TA0CCTL0 |= CCIE; // Enable Channel 0 CCIE bit
+//   TA0CCTL0 &= ~CCIFG; // Clear Channel 0 CCIFG bit
+
+//   //Configure Timer_A: divide by 1, continuous mode, TAR cleared, enable interrupt for rollback-to-zero
+//   TA0CTL = TASSEL_1 | ID_0 | MC_1 | TACLR ; // use ACLK, divide by 1, continous mode, clear TAR
+//   // TAIE is not set to 1 because we are using a different flag (CCIE, which compares TAR to TACCR0)
+  
+
+//   // Enable the global interrupt bit
+//   __enable_interrupt();
+
+//   // infinite loop, waits between interrupts
+//   for(;;){}
+
+// }
+
+// // ** Writing the ISR **
+// #pragma vector = TIMER0_A0_VECTOR // Link the ISR to the vector
+// __interrupt void T0A0_ISR() {
+//   // Interrupt response goes here
+//   P1OUT ^= redLED; // toggle LED
+//   // hardware clears the flag
+// }
+  
+// Part 3: Push Button with Interrupt
 int main(void) {
 
   WDTCTL = WDTPW | WDTHOLD; // Stop WDT
@@ -77,19 +116,15 @@ int main(void) {
   // Configure GPIO
   P1DIR |= redLED; // Clear P1.0 output latch for a defined power-on state
   P1OUT &= ~redLED;   // Turn LED Off
-
-  // configure ACLK to the 32KHz crystal
-  config_ACLK_to_32KHz_crystal();
+  P9DIR |= greenLED;
+  P9OUT &= ~greenLED;
   
-  // Configure Channel 0 for up mode with interrupts
-  TA0CCR0 = 32768-1; // 1 second @ 32 KHz, for 0.5 s set to 16384, for 0.1 s set to 3276
-  TA0CCTL0 |= CCIE; // Enable Channel 0 CCIE bit
-  TA0CCTL0 &= ~CCIFG; // Clear Channel 0 CCIFG bit
-
-  //Configure Timer_A: divide by 1, continuous mode, TAR cleared, enable interrupt for rollback-to-zero
-  TA0CTL = TASSEL_1 | ID_0 | MC_1 | TACLR ; // use ACLK, divide by 1, continous mode, clear TAR
-  // TAIE is not set to 1 because we are using a different flag (CCIE, which compares TAR to TACCR0)
-  
+  P1DIR &= ~(BUT1|BUT2);  //0: Direct pin as input
+  P1REN |= (BUT1|BUT2);   //1: Enable built-in resistor
+  P1OUT |= (BUT1|BUT2);   //1: Set resistor as pull-up
+  P1IES |= (BUT1|BUT2);   //1: interrupt on falling edge (0 for rising edge)
+  P1IFG &= ~(BUT1|BUT2);  //0: clear the interrupt flags
+  P1IE  |= (BUT1|BUT2);   //1: enable the interrupts
 
   // Enable the global interrupt bit
   __enable_interrupt();
@@ -100,12 +135,18 @@ int main(void) {
 }
 
 // ** Writing the ISR **
-#pragma vector = TIMER0_A0_VECTOR // Link the ISR to the vector
-__interrupt void T0A0_ISR() {
-  // Interrupt response goes here
-  P1OUT ^= redLED; // toggle LED
-  // hardware clears the flag
+#pragma vector = PORT1_VECTOR // Link the ISR to the vector
+__interrupt void P1_ISR() {
+  // Detect button 1 interrupt flag
+  if((P1IFG & BUT1) !=0 ) {
+    P1OUT ^= redLED; // toggle LED
+    P1IFG &= ~BUT1; // clear button 1 interrupt flag
+    __delay_cycles(200000);
+  }
+  // Detect button 2 interrupt flag
+  if((P1IFG & BUT2) !=0 ) {
+    P9OUT ^= greenLED; // toggle LED
+    P1IFG &= ~BUT2; // clear button 2 interrupt flag
+    __delay_cycles(200000);
+  }
 }
-
-// Part 3: Push Button with Interrupt
-
