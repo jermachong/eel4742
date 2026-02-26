@@ -193,7 +193,7 @@ void config_ACLK_to_32KHz_crystal() {
 // }
 
 // Part 5: Application: Crawler Guidance System
-int left=0, right = 0;
+volatile int left=0, right = 0;
 int_fast8_t redEnabled =1, greenEnabled = 1;
 int main(void) {
 
@@ -228,6 +228,7 @@ int main(void) {
 
   // engage low power mode
   _low_power_mode_3(); // auto enables interrupt
+  // __enable_interrupt();
 
 }
 
@@ -241,79 +242,153 @@ __interrupt void T0A0_ISR() {
     P9OUT ^= greenLED; // toggle LED
   
 }
+// #pragma vector = PORT1_VECTOR
+// __interrupt void P1_ISR() {
+//     uint8_t flags = P1IFG;
+//     P1IFG &= ~(BUT1 | BUT2); // Clear flags immediately
+
+//     // --- LEFT STEERING (BUT1) ---
+//     if (flags & BUT1) {
+//         if (right > 0) { // Returning from RIGHT to Neutral
+//             right--;
+//             if (right == 0) {
+//                 greenEnabled = 1; redEnabled = 1;
+//                 TA0CCR0 = 32768;
+//                 P1OUT &= ~redLED; P9OUT &= ~greenLED;
+//             } 
+//             else if (right == 1) { TA0CCR0 = 16384; }
+//             else if (right == 2) { TA0CCR0 = 8192; }
+//             TA0R = 0; 
+//         } 
+//         else { // Steering LEFT
+//             greenEnabled = 0; P9OUT &= ~greenLED; redEnabled = 1;
+//             if      (left == 0) { TA0CCR0 = 16384; left = 1; }
+//             else if (left == 1) { TA0CCR0 = 8192;  left = 2; }
+//             else if (left == 2) { TA0CCR0 = 4096;  left = 3; } // R+++
+//             TA0R = 0;
+//         }
+//         __delay_cycles(400000); // Wait for the human to let go
+//     }
+
+//     // --- RIGHT STEERING (BUT2) ---
+//     if (flags & BUT2) {
+//         if (left > 0) { // Returning from LEFT to Neutral
+//             left--;
+//             if (left == 0) {
+//                 greenEnabled = 1; redEnabled = 1;
+//                 TA0CCR0 = 32768;
+//                 P1OUT &= ~redLED; P9OUT &= ~greenLED;
+//             } 
+//             else if (left == 1) { TA0CCR0 = 16384; }
+//             else if (left == 2) { TA0CCR0 = 8192; }
+//             TA0R = 0;
+//         } 
+//         else { // Steering RIGHT
+//             redEnabled = 0; P1OUT &= ~redLED; greenEnabled = 1;
+//             if      (right == 0) { TA0CCR0 = 16384; right = 1; }
+//             else if (right == 1) { TA0CCR0 = 8192;  right = 2; }
+//             else if (right == 2) { TA0CCR0 = 4096;  right = 3; } // G+++
+//             TA0R = 0;
+//         }
+//         __delay_cycles(400000); // Wait for the human to let go
+//     }
+// }
 
 #pragma vector = PORT1_VECTOR // Link the ISR to the vector
 __interrupt void P1_ISR() {
-
+  uint8_t flags = P1IFG;
+  P1IFG &= ~(BUT1|BUT2); // clear buttons interrupt flag
+  
   // Detect button 1 interrupt flag
   // left steering
-  if((P1IFG & BUT1) !=0 ) {
-    if(right > 0) // right is activated
+  if((flags & BUT1) !=0 ) {
+    if(right > 0) // right is activated, let's move back to neutral 
     {  
-      right --;
+      right--;
       if(right == 0)
       {  
         greenEnabled = 1; // re-enable right
+        redEnabled = 1;
+        TA0CCR0 = 32768; // speed up timer
+        P1OUT &= ~redLED;
         P9OUT &= ~greenLED;
       }
-      P1IFG &= ~(BUT1|BUT2); // clear buttons interrupt flag
-      return;
+      else if (right == 1)
+        TA0CCR0 = 16384;
+      else if (right == 2)
+        TA0CCR0 = 16384/2;
+      TA0R = 0;
     }
-      
-    if(left == 0 && right == 0) // first left (R+)
+    else // steering left
     {
       greenEnabled = 0; // disable right (greenLED)
-      TA0CCR0 = 16384;// speed up timer
-      left++;
+      P9OUT &= ~greenLED; // force LED off
+      redEnabled =1; // make sure left is still  blinking  
+      if(left == 0) // first left (R+)
+      {
+        TA0CCR0 = 16384;// speed up timer
+        left=1;
+      }
+      else if (left == 1) // second left (R++)
+      {
+        TA0CCR0 = 16384/2; // speed up timer
+        left=2;
+      }
+      else if (left == 2) // third left (R+++)
+      {
+        // speed up timer to max freq
+        TA0CCR0 = 16384/4;// speed up timer
+        left = 3; // max reached
+      }
+      TA0R = 0; // Ensure the new speed takes effect immediately
     }
-    else if (left == 1) // second left (R++)
-    {
-      TA0CCR0 = 16384/2; // speed up timer
-      left++;
-    }
-    else if (left == 2) // third left (R+++)
-    {
-      // speed up timer to max freq
-      TA0CCR0 = 16384/4;// speed up timer
-      left = 2; // max reached
-    }
-    __delay_cycles(200000);
+    __delay_cycles(400000);
   }
   // Detect button 2 interrupt flag
   // right steering
-  if((P1IFG & BUT2) !=0 ) {
-    if(left > 0) // right is activated
+  if((flags & BUT2) !=0 ) {
+    if(left > 0) // left is activated
     {  
-      left --;
+      left--;
       if(left == 0)
         {
-          redEnabled = 1; // re-enable right
+          greenEnabled = 1; // re-enable right
+          redEnabled = 1;
+          TA0CCR0 = 32768;// speed up timer
           P1OUT &= ~redLED;
+          P9OUT &= ~greenLED; 
         }
-        P1IFG &= ~(BUT1|BUT2); // clear buttons interrupt flag  
-      return;
+        else if (left == 1) // second left (R++)
+          TA0CCR0 = 16384;
+        else if (left == 2) // third left (R+++)
+          TA0CCR0 = 16384/2;
+        TA0R =0; // reset timer
     }
-      
-    if(left == 0 && right == 0) // first left (R+)
-    {
-      redEnabled = 0; // disable right (greenLED)
-      TA0CCR0 = 16384;// speed up timer
-      right++;
+    else // steering right 
+    { 
+      redEnabled = 0;
+      P1OUT &= ~redLED;
+      greenEnabled =1; // make sure right is still blinking
+      if(right == 0) // first right (G+)
+      {
+        TA0CCR0 = 16384;// speed up timer
+        right=1;
+      }
+      else if (right == 1) // second right (G++)
+      {
+        TA0CCR0 = 16384/2; // speed up timer
+        right=2;
+      }
+      else if (right == 2) // third right (G+++)
+      {
+        // speed up timer to max freq
+        TA0CCR0 = 16384/4;// speed up timer
+        right = 3; // max reached
+      }
+      TA0R = 0; // Ensure the new speed takes effect immediately
     }
-    else if (right == 1) // second left (R++)
-    {
-      TA0CCR0 = 16384/2; // speed up timer
-      right++;
-    }
-    else if (right == 2) // third left (R+++)
-    {
-      // speed up timer to max freq
-      TA0CCR0 = 16384/4;// speed up timer
-      right = 2; // max reached
-    }
-    __delay_cycles(200000);
+    __delay_cycles(400000);
   }
 
-  P1IFG &= ~(BUT1|BUT2); // clear buttons interrupt flag
-
+  // __delay_cycles(250000);
 }
