@@ -217,22 +217,20 @@ int main(void) {
   config_ACLK_to_32KHz_crystal();
   
   // Configure Channel 0 for up mode with interrupts
-  TA0CCR0 = 32768; // 1 second @ 32 KHz, for 0.5 s set to 16384, for 0.1 s set to 3276
+  TA0CCR0 = 32768; // 1 second @ 32 KHz
   TA0CCTL0 |= CCIE; // Enable Channel 0 CCIE bit
   TA0CCTL0 &= ~CCIFG; // Clear Channel 0 CCIFG bit
 
   //Configure Timer_A: divide by 1, continuous mode, TAR cleared, enable interrupt for rollback-to-zero
   TA0CTL = TASSEL_1 | ID_0 | MC_1 | TACLR ; // use ACLK, divide by 1, continous mode, clear TAR
   // TAIE is not set to 1 because we are using a different flag (CCIE, which compares TAR to TACCR0)
-  
 
-  // engage low power mode
+  // engage low power mode 3 (Leaves ACLK on)
   _low_power_mode_3(); // auto enables interrupt
-  // __enable_interrupt();
 
 }
 
-// ** Writing the ISRS **
+// ** Writing the ISRs **
 #pragma vector = TIMER0_A0_VECTOR // Link the ISR to the vector
 __interrupt void T0A0_ISR() {
   // Interrupt response goes here
@@ -240,59 +238,7 @@ __interrupt void T0A0_ISR() {
     P1OUT ^= redLED; // toggle LED
   if(greenEnabled)
     P9OUT ^= greenLED; // toggle LED
-  
 }
-// #pragma vector = PORT1_VECTOR
-// __interrupt void P1_ISR() {
-//     uint8_t flags = P1IFG;
-//     P1IFG &= ~(BUT1 | BUT2); // Clear flags immediately
-
-//     // --- LEFT STEERING (BUT1) ---
-//     if (flags & BUT1) {
-//         if (right > 0) { // Returning from RIGHT to Neutral
-//             right--;
-//             if (right == 0) {
-//                 greenEnabled = 1; redEnabled = 1;
-//                 TA0CCR0 = 32768;
-//                 P1OUT &= ~redLED; P9OUT &= ~greenLED;
-//             } 
-//             else if (right == 1) { TA0CCR0 = 16384; }
-//             else if (right == 2) { TA0CCR0 = 8192; }
-//             TA0R = 0; 
-//         } 
-//         else { // Steering LEFT
-//             greenEnabled = 0; P9OUT &= ~greenLED; redEnabled = 1;
-//             if      (left == 0) { TA0CCR0 = 16384; left = 1; }
-//             else if (left == 1) { TA0CCR0 = 8192;  left = 2; }
-//             else if (left == 2) { TA0CCR0 = 4096;  left = 3; } // R+++
-//             TA0R = 0;
-//         }
-//         __delay_cycles(400000); // Wait for the human to let go
-//     }
-
-//     // --- RIGHT STEERING (BUT2) ---
-//     if (flags & BUT2) {
-//         if (left > 0) { // Returning from LEFT to Neutral
-//             left--;
-//             if (left == 0) {
-//                 greenEnabled = 1; redEnabled = 1;
-//                 TA0CCR0 = 32768;
-//                 P1OUT &= ~redLED; P9OUT &= ~greenLED;
-//             } 
-//             else if (left == 1) { TA0CCR0 = 16384; }
-//             else if (left == 2) { TA0CCR0 = 8192; }
-//             TA0R = 0;
-//         } 
-//         else { // Steering RIGHT
-//             redEnabled = 0; P1OUT &= ~redLED; greenEnabled = 1;
-//             if      (right == 0) { TA0CCR0 = 16384; right = 1; }
-//             else if (right == 1) { TA0CCR0 = 8192;  right = 2; }
-//             else if (right == 2) { TA0CCR0 = 4096;  right = 3; } // G+++
-//             TA0R = 0;
-//         }
-//         __delay_cycles(400000); // Wait for the human to let go
-//     }
-// }
 
 #pragma vector = PORT1_VECTOR // Link the ISR to the vector
 __interrupt void P1_ISR() {
@@ -342,7 +288,7 @@ __interrupt void P1_ISR() {
       }
       TA0R = 0; // Ensure the new speed takes effect immediately
     }
-    __delay_cycles(400000);
+    __delay_cycles(500000);
   }
   // Detect button 2 interrupt flag
   // right steering
@@ -362,7 +308,7 @@ __interrupt void P1_ISR() {
           TA0CCR0 = 16384;
         else if (left == 2) // third left (R+++)
           TA0CCR0 = 16384/2;
-        TA0R =0; // reset timer
+      TA0R =0; // reset timer
     }
     else // steering right 
     { 
@@ -387,8 +333,7 @@ __interrupt void P1_ISR() {
       }
       TA0R = 0; // Ensure the new speed takes effect immediately
     }
-    __delay_cycles(400000);
+    __delay_cycles(500000);
   }
-
   // __delay_cycles(250000);
 }
