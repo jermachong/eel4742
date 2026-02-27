@@ -11,6 +11,7 @@
 .vscode/
 .theia/
 .clangd/
+**/.clangd/
 **/Debug/
 **/targetConfigs/
 **/.launches/
