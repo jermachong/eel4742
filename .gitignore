@@ -12,7 +12,22 @@
 .theia/
 .clangd/
 **/Debug/
+**/targetConfigs/
+**/.launches/
+**/Release/
+*.out
+*.map
+*.obj
+*.o
+*.d
+*.txt
+*.hex
 # **/.ccsproject
 # **/.project
-# **/.settings/
-/.metadata/
+**/.settings/
+.settings/
+.launches/
+.localHistory/
+.metadata/
+.DS_Store
+Thumbs.db
