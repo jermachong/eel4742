@@ -1,13 +1,10 @@
 # 1. Ignore everything by default
-*
 
-# 2. Allow Git to look into directories (The "Parent Directory" Fix)
-!*/
 
 # 3. Whitelist the files you actually want
 /hw/
 !/**/main.c
-!/**/lnk_msp430fr6889.cmd
+!/**/lnk_msp430fr6989.cmd
 
 # 4. Explicitly re-ignore IDE and Build folders
 # This stops Git from tracking CCS, VS Code, and Theia settings
@@ -18,3 +15,4 @@
 # **/.ccsproject
 # **/.project
 # **/.settings/
+/.metadata/
