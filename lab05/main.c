@@ -10,6 +10,10 @@
 #define greenLED BIT7 // Green LED at P9.7
 #define BUT1 BIT1     // Button S1 at P1.1
 #define BUT2 BIT2     // Button S2 at P1.2
+#define exclaim BIT0  // exclamaition mark
+#define timer BIT3	  // timer icon
+#define decimal BIT0  // decimal icon
+#define colon BIT2;   // colon icon
 
 // The array has the shapes of the digits (0 to 9)
 const unsigned char LCD_Shapes[10] = {
@@ -38,6 +42,9 @@ void config_ACLK_to_32KHz_crystal()
 }
 
 
+void lcd_disp_symbol(int status){
+
+}
 
 void lcd_write_uint16(unsigned int n ){
 	int digit;
@@ -125,6 +132,81 @@ return;
 // }
 
 // Part 2: Implementing a Counter
+// unsigned int counter = 0;
+// int main(void)
+// {
+// 	volatile unsigned int n;
+// 	WDTCTL = WDTPW | WDTHOLD; // Stop WDT
+// 	PM5CTL0 &= ~LOCKLPM5;
+// 	P1DIR |= redLED; // Pins as output
+// 	P9DIR |= greenLED;
+// 	P1OUT |= redLED; // Red on
+// 	P9OUT &= ~greenLED; // Green off
+
+// 	// ** Button Setup **
+// 	P1DIR &= ~(BUT1|BUT2);  //0: Direct pin as input
+// 	P1REN |= (BUT1|BUT2);   //1: Enable built-in resistor
+// 	P1OUT |= (BUT1|BUT2);   //1: Set resistor as pull-up
+// 	P1IES |= (BUT1|BUT2);   //1: interrupt on falling edge (0 for rising edge)
+// 	P1IFG &= ~(BUT1|BUT2);  //0: clear the interrupt flags
+// 	P1IE  |= (BUT1|BUT2);   //1: enable the interrupts
+	
+// 	// *** Timer Module Setup ***
+// 	// Configure Channel 0 for up mode with interrupts
+// 	TA0CCR0 = 32768; // 1 second @ 32 KHz
+// 	TA0CCTL0 |= CCIE; // Enable Channel 0 CCIE bit
+// 	TA0CCTL0 &= ~CCIFG; // Clear Channel 0 CCIFG bit
+
+// 	//Configure Timer_A: divide by 1, up mode, TAR cleared, enable interrupt for rollback-to-zero
+// 	TA0CTL = TASSEL_1 | ID_0 | MC_1 | TACLR ; // use ACLK, divide by 1, continous mode, clear TAR
+// 	// TAIE is not set to 1 because we are using a different flag (CCIE, which compares TAR to TACCR0)
+
+// 	// Enable the global interrupt bit
+// 	__enable_interrupt();
+	
+// 	// configure ACLK to the 32KHz crystal
+//  	config_ACLK_to_32KHz_crystal();
+
+// 	// Initializes the LCD_C module
+// 	Initialize_LCD();
+
+// 	LCDCMEMCTL = LCDCLRM; // Clears all the segments
+
+// 	//Flash the red LED
+// 	for(;;){	
+// 		// Display 16-bit Unsigned Number
+// 		lcd_write_uint16(counter); // update num on display
+// 	}
+
+// }
+
+// // ** ISR for Part 2**
+// #pragma vector = TIMER0_A0_VECTOR // Link the ISR to the vector
+// __interrupt void T0A0_ISR() {
+//   // Interrupt response goes here
+//   counter++; // increase number on display by 1 every second
+//   // hardware clears the flag
+// }
+
+// // ** ISR for Part 2 **
+// #pragma vector = PORT1_VECTOR // Link the ISR to the vector
+// __interrupt void P1_ISR() {
+//   // If S1 is pressed, reset counter
+//   if((P1IFG & BUT1) !=0 ) {
+//     counter = 0;
+// 	TA0R = 0;
+//     P1IFG &= ~BUT1; // clear button 1 interrupt flag
+//     __delay_cycles(500000);
+//   }
+//   // If S2 is pressed, add 1000
+//   if((P1IFG & BUT2) !=0 ) {
+//     counter += 1000;
+//     P1IFG &= ~BUT2; // clear button 2 interrupt flag
+//     __delay_cycles(500000);
+//   }
+// }
+
+// Part 3: Utility Chronometer
 unsigned int counter = 0;
 int main(void)
 {
@@ -146,7 +228,7 @@ int main(void)
 	
 	// *** Timer Module Setup ***
 	// Configure Channel 0 for up mode with interrupts
-	TA0CCR0 = 32768; // 1 second @ 32 KHz, for 0.5 s set to 16384, for 0.1 s set to 3276
+	TA0CCR0 = 32768; // 1 second @ 32 KHz
 	TA0CCTL0 |= CCIE; // Enable Channel 0 CCIE bit
 	TA0CCTL0 &= ~CCIFG; // Clear Channel 0 CCIFG bit
 
@@ -156,19 +238,20 @@ int main(void)
 
 	// Enable the global interrupt bit
 	__enable_interrupt();
-
+	
 	// configure ACLK to the 32KHz crystal
  	config_ACLK_to_32KHz_crystal();
 
 	// Initializes the LCD_C module
 	Initialize_LCD();
-
 	LCDCMEMCTL = LCDCLRM; // Clears all the segments
-
+	LCDM3 |= exclaim;
+	LCDM3 |= timer;
+	LCDM7 |= colon;
 	//Flash the red LED
 	for(;;){	
 		// Display 16-bit Unsigned Number
-		lcd_write_uint16(counter);
+		lcd_write_uint16(counter); // update num on display
 	}
 
 }
@@ -177,26 +260,27 @@ int main(void)
 #pragma vector = TIMER0_A0_VECTOR // Link the ISR to the vector
 __interrupt void T0A0_ISR() {
   // Interrupt response goes here
-  counter++;
+  counter++; // increase number on display by 1 every second
   // hardware clears the flag
 }
 
-// ** Writing the ISR **
+// ** ISR for Part 2 **
 #pragma vector = PORT1_VECTOR // Link the ISR to the vector
 __interrupt void P1_ISR() {
-  // Detect button 1 interrupt flag
+  // If S1 is pressed, reset counter
   if((P1IFG & BUT1) !=0 ) {
     counter = 0;
 	TA0R = 0;
     P1IFG &= ~BUT1; // clear button 1 interrupt flag
     __delay_cycles(500000);
   }
-  // Detect button 2 interrupt flag
+  // If S2 is pressed, add 1000
   if((P1IFG & BUT2) !=0 ) {
     counter += 1000;
     P1IFG &= ~BUT2; // clear button 2 interrupt flag
     __delay_cycles(500000);
   }
 }
+
 
 
