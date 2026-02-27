@@ -22,8 +22,6 @@
 *.d
 *.txt
 *.hex
-# **/.ccsproject
-# **/.project
 **/.settings/
 .settings/
 .launches/
@@ -31,3 +29,4 @@
 .metadata/
 .DS_Store
 Thumbs.db
+config.theia-workspace
