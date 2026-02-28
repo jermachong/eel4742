@@ -1,17 +1,10 @@
-# 1. Ignore everything by default
 
-
-# 3. Whitelist the files you actually want
 /hw/
-!/**/main.c
-!/**/lnk_msp430fr6989.cmd
-
-# 4. Explicitly re-ignore IDE and Build folders
 # This stops Git from tracking CCS, VS Code, and Theia settings
 .vscode/
 .theia/
-.clangd/
-**/.clangd/
+.clangd
+*/.clangd
 **/Debug/
 **/targetConfigs/
 **/.launches/
