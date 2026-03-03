@@ -59,7 +59,7 @@ void lcd_write_uint16(unsigned int n ){
 
 	// clear the other digits
 	while(i<8) {
-		*LCDptrs[i] = 0x00;
+		*LCDptrs[i] = 0xFC;
 		i++;
 	}
 
@@ -208,6 +208,7 @@ return;
 
 // Part 3: Utility Chronometer
 unsigned int counter = 0;
+int_fast8_t enable = 1;
 int main(void)
 {
 	volatile unsigned int n;
@@ -245,7 +246,7 @@ int main(void)
 	// Initializes the LCD_C module
 	Initialize_LCD();
 	LCDCMEMCTL = LCDCLRM; // Clears all the segments
-	LCDM3 |= exclaim;
+	LCDM3 &= ~exclaim;
 	LCDM3 |= timer;
 	LCDM7 |= colon;
 	//Flash the red LED
@@ -256,24 +257,35 @@ int main(void)
 
 }
 
-// ** ISR for Part 2**
+// ** ISR for Part 3**
 #pragma vector = TIMER0_A0_VECTOR // Link the ISR to the vector
 __interrupt void T0A0_ISR() {
   // Interrupt response goes here
-  counter++; // increase number on display by 1 every second
-  // hardware clears the flag
+if(enable)
+{	LCDM7 ^= colon; // blink the colon
+	
+	if((counter+1)%100 == 60) { // if the next value in the tens place is a 6, increment by 100
+		counter = counter / 100;
+		counter = counter * 100;
+		counter += 100;
+	}
+	else
+		counter++; // increase number on display by 1 every second
 }
 
-// ** ISR for Part 2 **
+}
+
+// ** ISR for Part 3 **
 #pragma vector = PORT1_VECTOR // Link the ISR to the vector
 __interrupt void P1_ISR() {
-  // If S1 is pressed, reset counter
+  // If S1 is pressed, start/stop
   if((P1IFG & BUT1) !=0 ) {
-    counter = 0;
-	TA0R = 0;
+	enable ^= 1; // flip
+	TA0CTL |= (MC_0 | TACLR);
     P1IFG &= ~BUT1; // clear button 1 interrupt flag
     __delay_cycles(500000);
   }
+  
   // If S2 is pressed, add 1000
   if((P1IFG & BUT2) !=0 ) {
     counter += 1000;
