@@ -216,7 +216,7 @@ int main(void)
 	PM5CTL0 &= ~LOCKLPM5;
 	P1DIR |= redLED; // Pins as output
 	P9DIR |= greenLED;
-	P1OUT |= redLED; // Red on
+	P1OUT &= ~redLED; // Red on
 	P9OUT &= ~greenLED; // Green off
 
 	// ** Button Setup **
@@ -246,12 +246,39 @@ int main(void)
 	// Initializes the LCD_C module
 	Initialize_LCD();
 	LCDCMEMCTL = LCDCLRM; // Clears all the segments
-	LCDM3 &= ~exclaim;
-	LCDM3 |= timer;
+//	LCDM3 &= ~exclaim;
+//	LCDM3 |= timer;
 	LCDM7 |= colon;
-	//Flash the red LED
-	for(;;){	
-		// Display 16-bit Unsigned Number
+	LCDM20 |= decimal;
+
+	for(;;){
+
+	    // -- Long press S1 to reset --
+	    if( !(P1IN & BUT1) && (P1IN&BUT2)  )
+	    {
+	        __delay_cycles(1000000); // hold for 1 second
+	        if(!(P1IN & BUT1)) // still held, and S2 isn't held
+	            counter = 0, enable = 0; //reset timer and stop counting
+
+	    }
+
+	    // -- S2 fast forward and Rewind --
+	    if( !(P1IN & BUT2) ) // if S2 is being held down
+	    {
+//	        __delay_cycles(100000); // Speed of the fast-forward/rewind
+	        if ( !(P1IN & BUT1) ) // S1 is also being held down, then rewind
+	        {
+	            if(counter > 0)
+	                counter --;
+	        }
+	        else
+            {
+                counter++;
+                if(counter % 100 == 60)
+                    counter += 40;
+            }
+	    }
+	    // Display 16-bit Unsigned Number
 		lcd_write_uint16(counter); // update num on display
 	}
 
@@ -260,18 +287,25 @@ int main(void)
 // ** ISR for Part 3**
 #pragma vector = TIMER0_A0_VECTOR // Link the ISR to the vector
 __interrupt void T0A0_ISR() {
-  // Interrupt response goes here
-if(enable)
-{	LCDM7 ^= colon; // blink the colon
-	
-	if((counter+1)%100 == 60) { // if the next value in the tens place is a 6, increment by 100
-		counter = counter / 100;
-		counter = counter * 100;
-		counter += 100;
-	}
-	else
-		counter++; // increase number on display by 1 every second
-}
+
+
+    if(enable)
+    {	LCDM7 ^= colon; // blink the colon
+        LCDM3 &= ~exclaim; // turn on exclamation mark
+        LCDM3 |= timer; // turn on timer logo
+        counter ++;
+
+        if(counter%100 == 60) { // if the next value in the tens place is a 6, increment by 100
+            counter += 40;
+        }
+        else if (counter%1000 == 600)
+            counter += 400;
+
+    }
+    else {
+        LCDM3 |= exclaim; // turn on exclamation mark
+        LCDM3 &= ~timer; // turn off timer icon
+    }
 
 }
 
@@ -280,17 +314,16 @@ if(enable)
 __interrupt void P1_ISR() {
   // If S1 is pressed, start/stop
   if((P1IFG & BUT1) !=0 ) {
+    __delay_cycles(400000);
 	enable ^= 1; // flip
-	TA0CTL |= (MC_0 | TACLR);
     P1IFG &= ~BUT1; // clear button 1 interrupt flag
-    __delay_cycles(500000);
+
   }
   
   // If S2 is pressed, add 1000
   if((P1IFG & BUT2) !=0 ) {
-    counter += 1000;
     P1IFG &= ~BUT2; // clear button 2 interrupt flag
-    __delay_cycles(500000);
+
   }
 }
 
