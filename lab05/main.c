@@ -11,15 +11,15 @@
 #define BUT1 BIT1     // Button S1 at P1.1
 #define BUT2 BIT2     // Button S2 at P1.2
 #define exclaim BIT0  // exclamaition mark
-#define timer BIT3	  // timer icon
+#define timer BIT3    // timer icon
 #define decimal BIT0  // decimal icon
 #define colon BIT2;   // colon icon
 
 // The array has the shapes of the digits (0 to 9)
 const unsigned char LCD_Shapes[10] = {
-	0xFC, 0x60, 0xDB, 0xF3, 0x67, 0xB7, 0xBF, 0xE0, 0xFF, 0xF7 };
-	
-						// from right to left
+    0xFC, 0x60, 0xDB, 0xF3, 0x67, 0xB7, 0xBF, 0xE0, 0xFF, 0xF7 };
+
+                        // from right to left
 uint8_t * LCDptrs[8] = {&LCDM8, &LCDM15, &LCDM19, &LCDM4, &LCDM6};
 
 // Configures ACLK to 32 KHz crystal
@@ -46,24 +46,24 @@ void lcd_disp_symbol(int status){
 
 }
 
-void lcd_write_uint16(unsigned int n ){
-	int digit;
-	// uint8_t * LCDptr = &LCDM0;
-	int i = 0;
-	do{
-		digit = n % 10;
-		*LCDptrs[i] = LCD_Shapes[digit];
-		i++;
-		n = n/10;
-	}while(n>0);
+void lcd_write_uint16(long unsigned int n ){
+    long int digit;
+    // uint8_t * LCDptr = &LCDM0;
+    int i = 0;
+    do{
+        digit = n % 10;
+        *LCDptrs[i] = LCD_Shapes[digit];
+        i++;
+        n = n/10;
+    }while(n>0);
 
-	// clear the other digits
-	while(i<8) {
-		*LCDptrs[i] = 0xFC;
-		i++;
-	}
+    // clear the other digits
+    while(i<8) {
+        *LCDptrs[i] = 0xFC;
+        i++;
+    }
 
-	return;
+    return;
 }
 
 //**********************************************************
@@ -103,80 +103,80 @@ return;
 // Part 1: Printing on the LCD Display & Displaying 16-bit Unsigned Number
 // int main(void)
 // {
-// 	volatile unsigned int n;
-// 	WDTCTL = WDTPW | WDTHOLD; // Stop WDT
-// 	PM5CTL0 &= ~LOCKLPM5;
-// 	P1DIR |= redLED; // Pins as output
-// 	P1OUT |= redLED; // Red on
+//  volatile unsigned int n;
+//  WDTCTL = WDTPW | WDTHOLD; // Stop WDT
+//  PM5CTL0 &= ~LOCKLPM5;
+//  P1DIR |= redLED; // Pins as output
+//  P1OUT |= redLED; // Red on
 
-// 	// Initializes the LCD_C module
-// 	Initialize_LCD();
+//  // Initializes the LCD_C module
+//  Initialize_LCD();
 
-// 	LCDCMEMCTL = LCDCLRM; // Clears all the segments
+//  LCDCMEMCTL = LCDCLRM; // Clears all the segments
 
-// 	// Display 430 on the rightmost three digits
-// 	// LCDM19 = LCD_Shapes[7];
-// 	// LCDM15 = LCD_Shapes[8];
-// 	// LCDM8 = LCD_Shapes[9];
+//  // Display 430 on the rightmost three digits
+//  // LCDM19 = LCD_Shapes[7];
+//  // LCDM15 = LCD_Shapes[8];
+//  // LCDM8 = LCD_Shapes[9];
 
-// 	// Display 16-bit Unsigned Number
-// 	n = 1337;
-// 	lcd_write_uint16(n);
+//  // Display 16-bit Unsigned Number
+//  n = 1337;
+//  lcd_write_uint16(n);
 
-// 	//Flash the red LED
-// 	for(;;){
-// 		for(n=0;n<=60000;n++) {}
-// 		P1OUT ^= redLED;
-// 	}
-// 	return 0;
+//  //Flash the red LED
+//  for(;;){
+//      for(n=0;n<=60000;n++) {}
+//      P1OUT ^= redLED;
+//  }
+//  return 0;
 // }
 
 // Part 2: Implementing a Counter
 // unsigned int counter = 0;
 // int main(void)
 // {
-// 	volatile unsigned int n;
-// 	WDTCTL = WDTPW | WDTHOLD; // Stop WDT
-// 	PM5CTL0 &= ~LOCKLPM5;
-// 	P1DIR |= redLED; // Pins as output
-// 	P9DIR |= greenLED;
-// 	P1OUT |= redLED; // Red on
-// 	P9OUT &= ~greenLED; // Green off
+//  volatile unsigned int n;
+//  WDTCTL = WDTPW | WDTHOLD; // Stop WDT
+//  PM5CTL0 &= ~LOCKLPM5;
+//  P1DIR |= redLED; // Pins as output
+//  P9DIR |= greenLED;
+//  P1OUT |= redLED; // Red on
+//  P9OUT &= ~greenLED; // Green off
 
-// 	// ** Button Setup **
-// 	P1DIR &= ~(BUT1|BUT2);  //0: Direct pin as input
-// 	P1REN |= (BUT1|BUT2);   //1: Enable built-in resistor
-// 	P1OUT |= (BUT1|BUT2);   //1: Set resistor as pull-up
-// 	P1IES |= (BUT1|BUT2);   //1: interrupt on falling edge (0 for rising edge)
-// 	P1IFG &= ~(BUT1|BUT2);  //0: clear the interrupt flags
-// 	P1IE  |= (BUT1|BUT2);   //1: enable the interrupts
-	
-// 	// *** Timer Module Setup ***
-// 	// Configure Channel 0 for up mode with interrupts
-// 	TA0CCR0 = 32768; // 1 second @ 32 KHz
-// 	TA0CCTL0 |= CCIE; // Enable Channel 0 CCIE bit
-// 	TA0CCTL0 &= ~CCIFG; // Clear Channel 0 CCIFG bit
+//  // ** Button Setup **
+//  P1DIR &= ~(BUT1|BUT2);  //0: Direct pin as input
+//  P1REN |= (BUT1|BUT2);   //1: Enable built-in resistor
+//  P1OUT |= (BUT1|BUT2);   //1: Set resistor as pull-up
+//  P1IES |= (BUT1|BUT2);   //1: interrupt on falling edge (0 for rising edge)
+//  P1IFG &= ~(BUT1|BUT2);  //0: clear the interrupt flags
+//  P1IE  |= (BUT1|BUT2);   //1: enable the interrupts
 
-// 	//Configure Timer_A: divide by 1, up mode, TAR cleared, enable interrupt for rollback-to-zero
-// 	TA0CTL = TASSEL_1 | ID_0 | MC_1 | TACLR ; // use ACLK, divide by 1, continous mode, clear TAR
-// 	// TAIE is not set to 1 because we are using a different flag (CCIE, which compares TAR to TACCR0)
+//  // *** Timer Module Setup ***
+//  // Configure Channel 0 for up mode with interrupts
+//  TA0CCR0 = 32768; // 1 second @ 32 KHz
+//  TA0CCTL0 |= CCIE; // Enable Channel 0 CCIE bit
+//  TA0CCTL0 &= ~CCIFG; // Clear Channel 0 CCIFG bit
 
-// 	// Enable the global interrupt bit
-// 	__enable_interrupt();
-	
-// 	// configure ACLK to the 32KHz crystal
-//  	config_ACLK_to_32KHz_crystal();
+//  //Configure Timer_A: divide by 1, up mode, TAR cleared, enable interrupt for rollback-to-zero
+//  TA0CTL = TASSEL_1 | ID_0 | MC_1 | TACLR ; // use ACLK, divide by 1, continous mode, clear TAR
+//  // TAIE is not set to 1 because we are using a different flag (CCIE, which compares TAR to TACCR0)
 
-// 	// Initializes the LCD_C module
-// 	Initialize_LCD();
+//  // Enable the global interrupt bit
+//  __enable_interrupt();
 
-// 	LCDCMEMCTL = LCDCLRM; // Clears all the segments
+//  // configure ACLK to the 32KHz crystal
+//      config_ACLK_to_32KHz_crystal();
 
-// 	//Flash the red LED
-// 	for(;;){	
-// 		// Display 16-bit Unsigned Number
-// 		lcd_write_uint16(counter); // update num on display
-// 	}
+//  // Initializes the LCD_C module
+//  Initialize_LCD();
+
+//  LCDCMEMCTL = LCDCLRM; // Clears all the segments
+
+//  //Flash the red LED
+//  for(;;){
+//      // Display 16-bit Unsigned Number
+//      lcd_write_uint16(counter); // update num on display
+//  }
 
 // }
 
@@ -194,7 +194,7 @@ return;
 //   // If S1 is pressed, reset counter
 //   if((P1IFG & BUT1) !=0 ) {
 //     counter = 0;
-// 	TA0R = 0;
+//  TA0R = 0;
 //     P1IFG &= ~BUT1; // clear button 1 interrupt flag
 //     __delay_cycles(500000);
 //   }
@@ -207,80 +207,91 @@ return;
 // }
 
 // Part 3: Utility Chronometer
-unsigned int counter = 0;
+long unsigned int counter = 86955;
 int_fast8_t enable = 1;
 int main(void)
 {
-	volatile unsigned int n;
-	WDTCTL = WDTPW | WDTHOLD; // Stop WDT
-	PM5CTL0 &= ~LOCKLPM5;
-	P1DIR |= redLED; // Pins as output
-	P9DIR |= greenLED;
-	P1OUT &= ~redLED; // Red on
-	P9OUT &= ~greenLED; // Green off
+    volatile unsigned int n;
+    WDTCTL = WDTPW | WDTHOLD; // Stop WDT
+    PM5CTL0 &= ~LOCKLPM5;
+    P1DIR |= redLED; // Pins as output
+    P9DIR |= greenLED;
+    P1OUT &= ~redLED; // Red on
+    P9OUT &= ~greenLED; // Green off
 
-	// ** Button Setup **
-	P1DIR &= ~(BUT1|BUT2);  //0: Direct pin as input
-	P1REN |= (BUT1|BUT2);   //1: Enable built-in resistor
-	P1OUT |= (BUT1|BUT2);   //1: Set resistor as pull-up
-	P1IES |= (BUT1|BUT2);   //1: interrupt on falling edge (0 for rising edge)
-	P1IFG &= ~(BUT1|BUT2);  //0: clear the interrupt flags
-	P1IE  |= (BUT1|BUT2);   //1: enable the interrupts
-	
-	// *** Timer Module Setup ***
-	// Configure Channel 0 for up mode with interrupts
-	TA0CCR0 = 32768; // 1 second @ 32 KHz
-	TA0CCTL0 |= CCIE; // Enable Channel 0 CCIE bit
-	TA0CCTL0 &= ~CCIFG; // Clear Channel 0 CCIFG bit
+    // ** Button Setup **
+    P1DIR &= ~(BUT1|BUT2);  //0: Direct pin as input
+    P1REN |= (BUT1|BUT2);   //1: Enable built-in resistor
+    P1OUT |= (BUT1|BUT2);   //1: Set resistor as pull-up
+    P1IES |= (BUT1|BUT2);   //1: interrupt on falling edge (0 for rising edge)
+    P1IFG &= ~(BUT1|BUT2);  //0: clear the interrupt flags
+    P1IE  |= (BUT1|BUT2);   //1: enable the interrupts
 
-	//Configure Timer_A: divide by 1, up mode, TAR cleared, enable interrupt for rollback-to-zero
-	TA0CTL = TASSEL_1 | ID_0 | MC_1 | TACLR ; // use ACLK, divide by 1, continous mode, clear TAR
-	// TAIE is not set to 1 because we are using a different flag (CCIE, which compares TAR to TACCR0)
+    // *** Timer Module Setup ***
+    // Configure Channel 0 for up mode with interrupts
+    TA0CCR0 = 32768; // 1 second @ 32 KHz
+    TA0CCTL0 |= CCIE; // Enable Channel 0 CCIE bit
+    TA0CCTL0 &= ~CCIFG; // Clear Channel 0 CCIFG bit
 
-	// Enable the global interrupt bit
-	__enable_interrupt();
-	
-	// configure ACLK to the 32KHz crystal
- 	config_ACLK_to_32KHz_crystal();
+    //Configure Timer_A: divide by 1, up mode, TAR cleared, enable interrupt for rollback-to-zero
+    TA0CTL = TASSEL_1 | ID_0 | MC_1 | TACLR ; // use ACLK, divide by 1, continous mode, clear TAR
+    // TAIE is not set to 1 because we are using a different flag (CCIE, which compares TAR to TACCR0)
 
-	// Initializes the LCD_C module
-	Initialize_LCD();
-	LCDCMEMCTL = LCDCLRM; // Clears all the segments
-//	LCDM3 &= ~exclaim;
-//	LCDM3 |= timer;
-	LCDM7 |= colon;
-	LCDM20 |= decimal;
+    // Enable the global interrupt bit
+    __enable_interrupt();
 
-	for(;;){
+    // configure ACLK to the 32KHz crystal
+    config_ACLK_to_32KHz_crystal();
 
-	    // -- Long press S1 to reset --
-	    if( !(P1IN & BUT1) && (P1IN&BUT2)  )
-	    {
-	        __delay_cycles(1000000); // hold for 1 second
-	        if(!(P1IN & BUT1)) // still held, and S2 isn't held
-	            counter = 0, enable = 0; //reset timer and stop counting
+    // Initializes the LCD_C module
+    Initialize_LCD();
+    LCDCMEMCTL = LCDCLRM; // Clears all the segments
+//  LCDM3 &= ~exclaim;
+//  LCDM3 |= timer;
+    LCDM7 |= colon;
+    LCDM20 |= decimal;
 
-	    }
 
-	    // -- S2 fast forward and Rewind --
-	    if( !(P1IN & BUT2) ) // if S2 is being held down
-	    {
-//	        __delay_cycles(100000); // Speed of the fast-forward/rewind
-	        if ( !(P1IN & BUT1) ) // S1 is also being held down, then rewind
-	        {
-	            if(counter > 0)
-	                counter --;
-	        }
-	        else
+
+    for(;;){
+
+        // -- Long press S1 to reset --
+        if( !(P1IN & BUT1) && (P1IN&BUT2)  )
+        {
+            __delay_cycles(1000000); // hold for 1 second
+            if(!(P1IN & BUT1)) // still held, and S2 isn't held
+                counter = 0, enable = 0; //reset timer and stop counting
+
+        }
+
+        // -- S2 fast forward and Rewind --
+        if( !(P1IN & BUT2) ) // if S2 is being held down
+        {
+//          __delay_cycles(100000); // Speed of the fast-forward/rewind
+            if ( !(P1IN & BUT1) ) // S1 is also being held down, then rewind
+            {
+                if(counter > 0)
+                    counter --;
+                if(counter % 100 >= 60)
+                   counter -= 40;
+                if(counter % 10000 >= 6000)
+                    counter -= 4000;
+
+            }
+            else
             {
                 counter++;
-                if(counter % 100 == 60)
+                if(counter % 100 >= 60)
                     counter += 40;
+                if (counter%10000 >= 6000)
+                    counter += 4000;
+                if(counter > 95959)
+                    counter = 0;
             }
-	    }
-	    // Display 16-bit Unsigned Number
-		lcd_write_uint16(counter); // update num on display
-	}
+        }
+        // Display 16-bit Unsigned Number
+        lcd_write_uint16(counter); // update num on display
+    }
 
 }
 
@@ -290,16 +301,18 @@ __interrupt void T0A0_ISR() {
 
 
     if(enable)
-    {	LCDM7 ^= colon; // blink the colon
+    {   LCDM7 ^= colon; // blink the colon
         LCDM3 &= ~exclaim; // turn on exclamation mark
         LCDM3 |= timer; // turn on timer logo
         counter ++;
 
-        if(counter%100 == 60) { // if the next value in the tens place is a 6, increment by 100
+        if(counter%100 >= 60) { // if the next value in the tens place is a 6, increment by 100
             counter += 40;
         }
-        else if (counter%1000 == 600)
-            counter += 400;
+        if (counter%10000 >= 6000)
+            counter += 4000;
+        if(counter > 95959)
+            counter = 0;
 
     }
     else {
@@ -315,17 +328,16 @@ __interrupt void P1_ISR() {
   // If S1 is pressed, start/stop
   if((P1IFG & BUT1) !=0 ) {
     __delay_cycles(400000);
-	enable ^= 1; // flip
+    enable ^= 1; // flip
     P1IFG &= ~BUT1; // clear button 1 interrupt flag
 
   }
-  
+
   // If S2 is pressed, add 1000
   if((P1IFG & BUT2) !=0 ) {
     P1IFG &= ~BUT2; // clear button 2 interrupt flag
 
   }
 }
-
 
 
