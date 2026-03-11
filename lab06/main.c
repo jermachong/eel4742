@@ -23,10 +23,12 @@
 #define decimal BIT0  // decimal icon
 #define colon BIT2;   // colon icon
 
+// given functions
 void Initialize_UART(void);
 void uart_write_char(unsigned char ch);
 unsigned char uart_read_char(void);
 
+// custom functions
 void uart_write_uint16(unsigned int n);
 void uart_write_string(char *str);
 
