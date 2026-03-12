@@ -125,17 +125,17 @@ int main(void) {
   P3SEL1 &= ~(BIT4 | BIT5);
   P3SEL0 |= (BIT4 | BIT5);
   P1DIR |= redLED; // Pins as output
-  P9DIR |= greenLED;
-  P1OUT &= ~redLED;   // Red on
-  P9OUT &= ~greenLED; // Green off
+  // P9DIR |= greenLED;
+  P1OUT &= ~redLED;   // Red off
+  // P9OUT &= ~greenLED; // Green off
 
   Initialize_UART_2(); // setup using custom config with ACLK @ 32KHz
 
-  // uart_write_uint16(short_num);
-  // uart_write_uint16(long_num);
+  uart_write_uint16(short_num);
+  uart_write_uint16(long_num);
 
   uart_write_string(short_str);
-  // uart_write_string(long_str);
+  uart_write_string(long_str);
 
   for (;;) {
     P1OUT ^= redLED; // blink LED
@@ -170,6 +170,17 @@ void Initialize_UART(void) {
 // 4800 baud, 8-bit data, LSB first, no parity bits, 1 stop bit
 // Clock: ACLK @ 32 KHz (32,768 Hz)
 void Initialize_UART_2(void) {
+  // Configure LFXT pins (PJ.4 = XIN, PJ.5 = XOUT) for 32.768 kHz crystal
+  PJSEL0 |= BIT4 | BIT5;
+
+  // Wait for LFXT to stabilize
+  do {
+    CSCTL0_H = CSKEY_H;    // Unlock CS registers
+    CSCTL5 &= ~LFXTOFFG;  // Clear LFXT fault flag
+    CSCTL0_H = 0;          // Lock CS registers
+    SFRIFG1 &= ~OFIFG;    // Clear oscillator fault interrupt flag
+  } while (SFRIFG1 & OFIFG);
+
   // Configure pins to UART functionality
   P3SEL1 &= ~(BIT4 | BIT5);
   P3SEL0 |= (BIT4 | BIT5);
@@ -242,5 +253,5 @@ void uart_write_string(char *str) {
   for (i = 0; i < n; i++) { // loop through chars abnd print
     uart_write_char(str[i]);
   }
-  // uart_write_char('\n');
+  uart_write_char('\n');
 }
