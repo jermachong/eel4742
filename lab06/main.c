@@ -24,6 +24,8 @@
 #define colon BIT2;   // colon icon
 
 // given functions
+void Initialize_UART_2(void);
+
 void Initialize_UART(void);
 void uart_write_char(unsigned char ch);
 unsigned char uart_read_char(void);
@@ -31,7 +33,6 @@ unsigned char uart_read_char(void);
 // custom functions
 void uart_write_uint16(unsigned int n);
 void uart_write_string(char *str);
-void Initialize_UART_2(void);
 
 // Part 6.1: Transmitting Data over UART
 // int main(void)
@@ -133,8 +134,8 @@ int main(void) {
   // uart_write_uint16(short_num);
   // uart_write_uint16(long_num);
 
-  // uart_write_string(short_str);
-  uart_write_string(long_str);
+  uart_write_string(short_str);
+  // uart_write_string(long_str);
 
   for (;;) {
     P1OUT ^= redLED; // blink LED
@@ -176,7 +177,7 @@ void Initialize_UART_2(void) {
   UCA1CTLW0 = UCSWRST; // Engage reset; change all the fields to zero
   // Most fields in this register, when set to zero, correspond to the
   // popular configuration
-  UCA1CTLW0 |= UCSSEL_1; // Set clock to ACLK
+  UCA1CTLW0 |= UCSSEL__ACLK; // Set clock to ACLK
   // 32768 / 4800 = 6.826
   UCA1BRW = 6; // divider
   // UCBRS = 0xEE = UCBRS3 (bit #3)
@@ -241,5 +242,5 @@ void uart_write_string(char *str) {
   for (i = 0; i < n; i++) { // loop through chars abnd print
     uart_write_char(str[i]);
   }
-  uart_write_char('\n');
+  // uart_write_char('\n');
 }
