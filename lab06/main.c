@@ -16,12 +16,8 @@
 
 #define redLED BIT0   // Red LED at P1.0
 #define greenLED BIT7 // Green LED at P9.7
-#define BUT1 BIT1     // Button S1 at P1.1
-#define BUT2 BIT2     // Button S2 at P1.2
-#define exclaim BIT0  // exclamaition mark
-#define timer BIT3    // timer icon
-#define decimal BIT0  // decimal icon
-#define colon BIT2;   // colon icon
+
+ 
 
 // given functions
 void Initialize_UART_2(void);
@@ -114,6 +110,7 @@ int main(void) {
   WDTCTL = WDTPW | WDTHOLD; // stop watchdog timer
   PM5CTL0 &= ~LOCKLPM5;
 
+  int result = 0;
   char *short_str = "hello world";
   char *long_str = "YXACV5VN0MI5GRMX0YAZGWQBB3FLUP9D";
   unsigned int short_num = 1337;
@@ -125,9 +122,9 @@ int main(void) {
   P3SEL1 &= ~(BIT4 | BIT5);
   P3SEL0 |= (BIT4 | BIT5);
   P1DIR |= redLED; // Pins as output
-  // P9DIR |= greenLED;
+  P9DIR |= greenLED;
   P1OUT &= ~redLED;   // Red off
-  // P9OUT &= ~greenLED; // Green off
+  P9OUT &= ~greenLED; // Green off
 
   Initialize_UART_2(); // setup using custom config with ACLK @ 32KHz
 
@@ -139,6 +136,13 @@ int main(void) {
 
   for (;;) {
     P1OUT ^= redLED; // blink LED
+
+    result = uart_read_char(); // listen for input
+    if (result == '1')         // on green LED
+      P9OUT |= greenLED;
+    else if (result == '2') // off green LED
+      P9OUT &= ~greenLED;
+
     __delay_cycles(750000);
   }
 
@@ -171,14 +175,15 @@ void Initialize_UART(void) {
 // Clock: ACLK @ 32 KHz (32,768 Hz)
 void Initialize_UART_2(void) {
   // Configure LFXT pins (PJ.4 = XIN, PJ.5 = XOUT) for 32.768 kHz crystal
+  P3SEL1 &= ~(BIT4 | BIT5);
   PJSEL0 |= BIT4 | BIT5;
 
   // Wait for LFXT to stabilize
   do {
-    CSCTL0_H = CSKEY_H;    // Unlock CS registers
-    CSCTL5 &= ~LFXTOFFG;  // Clear LFXT fault flag
-    CSCTL0_H = 0;          // Lock CS registers
-    SFRIFG1 &= ~OFIFG;    // Clear oscillator fault interrupt flag
+    CSCTL0_H = CSKEY_H;  // Unlock CS registers
+    CSCTL5 &= ~LFXTOFFG; // Clear LFXT fault flag
+    CSCTL0_H = 0;        // Lock CS registers
+    SFRIFG1 &= ~OFIFG;   // Clear oscillator fault interrupt flag
   } while (SFRIFG1 & OFIFG);
 
   // Configure pins to UART functionality
