@@ -31,6 +31,7 @@ unsigned char uart_read_char(void);
 // custom functions
 void uart_write_uint16(unsigned int n);
 void uart_write_string(char *str);
+void Initialize_UART_2(void);
 
 // Part 6.1: Transmitting Data over UART
 // int main(void)
@@ -72,6 +73,42 @@ void uart_write_string(char *str);
 // }
 
 // Part 6.2 Transmitting Integers & Strings over UART
+// int main(void) {
+//   WDTCTL = WDTPW | WDTHOLD; // stop watchdog timer
+//   PM5CTL0 &= ~LOCKLPM5;
+
+//   char *short_str = "hello world";
+//   char *long_str = "YXACV5VN0MI5GRMX0YAZGWQBB3FLUP9D";
+//   unsigned int short_num = 1337;
+//   unsigned int long_num = 65535; // will roll over if value is above 65545
+
+//   // Configure pins to backchannel UART
+//   // Pins: (UCA1TXD / P3.4) (UCA1RXD / P3.5)
+//   // (P3SEL1=00, P3SEL0=11) (P2DIR=xx)
+//   P3SEL1 &= ~(BIT4 | BIT5);
+//   P3SEL0 |= (BIT4 | BIT5);
+//   P1DIR |= redLED; // Pins as output
+//   P9DIR |= greenLED;
+//   P1OUT &= ~redLED;   // Red on
+//   P9OUT &= ~greenLED; // Green off
+
+//   Initialize_UART();
+
+//   uart_write_uint16(short_num);
+//   uart_write_uint16(long_num);
+
+//   uart_write_string(short_str);
+//   uart_write_string(long_str);
+
+//   for (;;) {
+//     P1OUT ^= redLED; // blink LED
+//     __delay_cycles(750000);
+//   }
+
+//   return 0;
+// }
+
+// Part 6.3 Modifying the UART Configuration
 int main(void) {
   WDTCTL = WDTPW | WDTHOLD; // stop watchdog timer
   PM5CTL0 &= ~LOCKLPM5;
@@ -91,12 +128,12 @@ int main(void) {
   P1OUT &= ~redLED;   // Red on
   P9OUT &= ~greenLED; // Green off
 
-  Initialize_UART();
+  Initialize_UART_2(); // setup using custom config with ACLK @ 32KHz
 
-  uart_write_uint16(short_num);
-  uart_write_uint16(long_num);
+  // uart_write_uint16(short_num);
+  // uart_write_uint16(long_num);
 
-  uart_write_string(short_str);
+  // uart_write_string(short_str);
   uart_write_string(long_str);
 
   for (;;) {
@@ -106,7 +143,6 @@ int main(void) {
 
   return 0;
 }
-
 // Configure UART to the popular configuration
 // 9600 baud, 8-bit data, LSB first, no parity bits, 1 stop bit
 // no flow control, oversampling reception
@@ -125,6 +161,26 @@ void Initialize_UART(void) {
   // Modulators: UCBRF = 8 = 1000 --> UCBRF3 (bit #3)
   // UCBRS = 0x20 = 0010 0000 = UCBRS5 (bit #5)
   UCA1MCTLW = UCBRF3 | UCBRS5 | UCOS16;
+  // Exit the reset state
+  UCA1CTLW0 &= ~UCSWRST;
+}
+
+// Configure UART to the custom configuration
+// 4800 baud, 8-bit data, LSB first, no parity bits, 1 stop bit
+// Clock: ACLK @ 32 KHz (32,768 Hz)
+void Initialize_UART_2(void) {
+  // Configure pins to UART functionality
+  P3SEL1 &= ~(BIT4 | BIT5);
+  P3SEL0 |= (BIT4 | BIT5);
+  // Main configuration register
+  UCA1CTLW0 = UCSWRST; // Engage reset; change all the fields to zero
+  // Most fields in this register, when set to zero, correspond to the
+  // popular configuration
+  UCA1CTLW0 |= UCSSEL_1; // Set clock to ACLK
+  // 32768 / 4800 = 6.826
+  UCA1BRW = 6; // divider
+  // UCBRS = 0xEE = UCBRS3 (bit #3)
+  UCA1MCTLW = UCBRS7 | UCBRS6 | UCBRS5 | UCBRS3 | UCBRS2 | UCBRS1;
   // Exit the reset state
   UCA1CTLW0 &= ~UCSWRST;
 }
@@ -185,5 +241,5 @@ void uart_write_string(char *str) {
   for (i = 0; i < n; i++) { // loop through chars abnd print
     uart_write_char(str[i]);
   }
-  uart_write_char("\n");
+  uart_write_char('\n');
 }
