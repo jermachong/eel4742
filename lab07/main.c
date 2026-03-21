@@ -26,28 +26,28 @@ void uart_write_char(unsigned char ch);
 void uart_write_string(char *str);
 
 // Part 7.1: Reading the Manufacturer ID and Device ID Registers
-int main() {
-  WDTCTL = WDTPW | WDTHOLD; // stop watchdog timer
-  PM5CTL0 &= ~LOCKLPM5;
+// int main() {
+//   WDTCTL = WDTPW | WDTHOLD; // stop watchdog timer
+//   PM5CTL0 &= ~LOCKLPM5;
 
-  Initialize_UART();
-  Initialize_I2C();
+//   Initialize_UART();
+//   Initialize_I2C();
 
-  // Reading two bytes from register 0x50 on I2C device 0x22
-  unsigned int man_data = 0, dev_data = 0;
+//   // Reading two bytes from register 0x50 on I2C device 0x22
+//   unsigned int man_data = 0, dev_data = 0;
 
-  uart_write_char('t'); // test
+//   uart_write_char('t'); // test
 
-  for (;;) {
-    i2c_read_word(0x44, 0x7E, &man_data);
-    i2c_read_word(0x44, 0x7F, &dev_data);
-    uart_write_uint16(man_data);
-    uart_write_uint16(dev_data);
-    __delay_cycles(125000);
-  }
+//   for (;;) {
+//     i2c_read_word(0x44, 0x7E, &man_data);
+//     i2c_read_word(0x44, 0x7F, &dev_data);
+//     uart_write_uint16(man_data);
+//     uart_write_uint16(dev_data);
+//     __delay_cycles(125000);
+//   }
 
-  return 0;
-}
+//   return 0;
+// }
 
 // Part 7.2 Reading Measurments from the Light Sensor
 int main() {
@@ -56,6 +56,26 @@ int main() {
 
   Initialize_UART();
   Initialize_I2C();
+
+  unsigned int light_data = 0;
+
+  // RN=0111b=7 The LSB bit is worth 1.28
+  // CT=0 Result produced in 100 ms
+  // M=11b=3 Continuous readings
+  // ME=1 Mask (hide) the Exponent from the result
+  //  RN  CT M   ...        ME
+  //   |  |  |              |
+  //   v  v  v              v
+  // 0111 0  11 0 0 0 0 1 0 1 00 = 0x7614
+  i2c_write_word(0x44, 0x01, 0x7614);
+
+  for (;;) {
+    i2c_read_word(0x44, 0x00, &light_data);
+    uart_write_uint16(light_data * 1.28);
+    __delay_cycles(1000000);
+  }
+
+  return 0;
 }
 
 // Configure UART to the popular configuration
