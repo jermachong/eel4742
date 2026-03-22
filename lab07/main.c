@@ -26,6 +26,7 @@ int i2c_write_word(unsigned char i2c_address, unsigned char i2c_reg,
 void uart_write_uint16(unsigned int n);
 void uart_write_char(unsigned char ch);
 void uart_write_string(char *str);
+unsigned char uart_read_char();
 void increment_time(char input_time[]);
 void update_time(char input_time[]);
 int validate_time(char input_time[]);
@@ -137,10 +138,6 @@ int main() {
   unsigned int light_min = 0;
   if ((light_data * 1.28) - 10 > 0)
     light_min = lux - 10;
-
-  int hours = 12, min = 0;
-  char t;
-  unsigned long int i = 0, j = 0;
 
   // Write header
   uart_write_string("*** Lux Logger ***\n\n");
@@ -409,7 +406,7 @@ unsigned char uart_read_char(void) {
 // Function transmits 16-bit unsigned integers
 void uart_write_uint16(unsigned int n) {
   char str[6]; // 5 digits + null term
-  int i = 0, j, k = 0;
+  unsigned int i = 0, j, k = 0;
 
   // manually convert to string
   if (n == 0) {
@@ -444,8 +441,7 @@ void uart_write_string(char *str) {
 }
 
 // Configures ACLK to 32 KHz crystal
-void config_ACLK_to_32KHz_crystal()
-{
+void config_ACLK_to_32KHz_crystal() {
   // By default, ACLK runs on LFMODCLK at 5MHz/128 = 39 KHz
   // Reroute pins to LFXIN/LFXOUT functionality
   PJSEL1 &= ~BIT4;
@@ -453,8 +449,7 @@ void config_ACLK_to_32KHz_crystal()
   // Wait until the oscillator fault flags remain cleared
   CSCTL0 = CSKEY; // Unlock CS registers
 
-  do
-  {
+  do {
     CSCTL5 &= ~LFXTOFFG; // Local fault flag
     SFRIFG1 &= ~OFIFG;   // Global fault flag
   } while ((CSCTL5 & LFXTOFFG) != 0);
