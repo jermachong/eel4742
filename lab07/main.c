@@ -26,6 +26,11 @@ int i2c_write_word(unsigned char i2c_address, unsigned char i2c_reg,
 void uart_write_uint16(unsigned int n);
 void uart_write_char(unsigned char ch);
 void uart_write_string(char *str);
+void increment_time(char input_time[]);
+void update_time(char input_time[]);
+int validate_time(char input_time[]);
+
+char time[] = "12:00\t";
 
 // Part 7.1: Reading the Manufacturer ID and Device ID Registers
 // int main() {
@@ -107,19 +112,36 @@ int main() {
   // 0111 0  11 0 0 0 0 1 0 1 00 = 0x7614
   i2c_write_word(0x44, 0x01, 0x7614);
 
-  unsigned int light_data = 0, lux = 0;
+  int light_data = 0;
+  unsigned int lux = 0;
   i2c_read_word(0x44, 0x00, &light_data);
   lux = light_data * 1.28;
-  unsigned int light_max = lux + 10, light_min = lux - 10;
+  unsigned int light_max = lux + 10;
+  unsigned int light_min = 0;
+  if ((light_data * 1.28) - 10 > 0)
+    light_min = lux - 10;
 
-  char *time = "12:00\t";
+  int hours = 12, min = 0;
+  char t;
+  int i = 0;
+  int const seconds_scalar = 60; // adjust for delay duration
+
+  // Write initial
   uart_write_string("*** Lux Logger ***\n\n");
+  uart_write_string(time);
+  uart_write_uint16(lux);
+  uart_write_char('\n');
+  __enable_interrupt();
+  __delay_cycles(1000000 * seconds_scalar);
 
   for (;;) {
+    increment_time(time);
     i2c_read_word(0x44, 0x00, &light_data); // get reading
     lux = light_data * 1.28;
     uart_write_string(time);
     uart_write_uint16(lux);
+    if (!(P1IN & BUT2))
+      update_time(time);
 
     if (lux > light_max) {
       uart_write_string("\t<Up>");
@@ -128,12 +150,102 @@ int main() {
       uart_write_string("\t<Down>");
       light_min = lux;
     }
-    uart_write_char('\n');
-
-    __delay_cycles(1000000);
+    uart_write_char('\r\n');
+    // uart_write_char(t);
+    __delay_cycles(1000000 * seconds_scalar);
   }
 
   return 0;
+}
+
+int validate_time(char input_time[]) {
+  if (input_time[0] > '1')
+    return 0;
+  if (input_time[1] > '2')
+    return 0;
+  if (input_time[3] > '5')
+    return 0;
+
+  return 1; // valid
+}
+
+void update_time(char input_time[]) {
+  uart_write_string("Enter the time... (3 or 4 digits then hit Enter)\r\n");
+
+  char temp_buf[4]; // Temporary bucket to hold up to 4 keystrokes
+  int i = 0;
+  char t;
+
+  // 1. Collect the Keystrokes
+  while (1) {
+    t = uart_read_char(); // Read from UART
+
+    if (t != 0) { // ONLY act if a real character was received
+
+      // Check if the user hit Enter (Carriage Return or Line Feed)
+      if (t == '\r' || t == '\n') {
+        break; // Exit the while loop
+      }
+
+      // If it's a valid number, save it and echo it back to the terminal
+      if (t >= '0' && t <= '9') {
+        temp_buf[i] = t;
+        // uart_write_char(t); // Echo so the user can see what they are typing!
+        // uart_write_char('\n');
+        i++;
+      }
+
+      // If they typed 4 numbers, automatically stop (no need to press enter)
+      if (i == 4) {
+        break;
+      }
+    }
+  }
+  if (i == 4) {
+    input_time[0] = temp_buf[0];
+    input_time[1] = temp_buf[1];
+    input_time[3] = temp_buf[2];
+    input_time[4] = temp_buf[3];
+  } else {
+    input_time[0] = '0';
+    input_time[1] = temp_buf[0];
+    input_time[3] = temp_buf[1];
+    input_time[4] = temp_buf[2];
+  }
+  // if the time formatting is wrong, have user retype
+  if (validate_time(input_time) == 0)
+    update_time(input_time);
+  uart_write_string("Time is set to "), uart_write_string(time);
+  uart_write_string("\r\n");
+}
+
+// update time by 1 minute
+void increment_time(char input_time[]) {
+  // 1. Increment the minute ones-digit directly
+  input_time[4]++;
+
+  // 2. Cascade the carry-overs
+  if (input_time[4] > '9') {
+    input_time[4] = '0'; // Reset ones
+    input_time[3]++;     // Increment tens
+
+    if (input_time[3] > '5') {
+      input_time[3] = '0'; // Reset minute tens
+      input_time[1]++;     // Increment hour ones
+
+      // Handle 09:59 -> 10:00
+      if (input_time[1] > '9') {
+        input_time[1] = '0';
+        input_time[0]++;
+      }
+
+      // Handle 12:59 -> 01:00 (12-hour format logic)
+      if (input_time[0] == '1' && input_time[1] == '3') {
+        input_time[0] = '0';
+        input_time[1] = '1';
+      }
+    }
+  }
 }
 
 // Configure UART to the popular configuration
@@ -305,9 +417,17 @@ void uart_write_string(char *str) {
 // ** ISR for Part 3 **
 #pragma vector = PORT1_VECTOR // Link the ISR to the vector
 __interrupt void P1_ISR() {
-  // If S2 is pressed, set time
+
+  // 1. Check if S2 caused the interrupt
   if ((P1IFG & BUT2) != 0) {
 
-    __delay_cycles(500000);
+    uart_write_string(
+        "\r\nEnter the time... (3 or 4 digits then hit Enter)\r\n");
+
+    // 2. Call your robust update function!
+    update_time(time);
+
+    // 3. Clear the flag so the microcontroller doesn't crash
+    P1IFG &= ~BUT2;
   }
 }
