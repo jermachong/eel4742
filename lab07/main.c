@@ -30,14 +30,12 @@ unsigned char uart_read_char();
 void increment_time(char input_time[]);
 void update_time(char input_time[]);
 int validate_time(char input_time[]);
-// Configures ACLK to 32 KHz crystal
 void config_ACLK_to_32KHz_crystal();
 
 char time[] = "12:00\t";
 volatile int button_pressed = 0; // flag for button press
 volatile int log_ready = 1;      // Start at 1 to log immediately on boot
 volatile int timer_seconds = 0;  // Counts the 1-second timer ticks
-// int const seconds_scalar = 60;   // adjust for delay duration
 
 // Part 7.1: Reading the Manufacturer ID and Device ID Registers
 // int main() {
@@ -118,7 +116,7 @@ int main() {
   // Configure Timer_A: divide by 1, up mode, TAR cleared, enable interrupt for
   // rollback-to-zero
   TA0CTL = TASSEL_1 | ID_0 | MC_1 |
-           TACLR; // use ACLK, divide by 1, continous mode, clear TAR
+           TACLR; // use ACLK, divide by 1, up mode, clear TAR
 
   // RN=0111b=7 The LSB bit is worth 1.28
   // CT=0 Result produced in 100 ms
@@ -270,6 +268,29 @@ void increment_time(char input_time[]) {
         input_time[1] = '1';
       }
     }
+  }
+}
+
+// ** ISR for Part 3 **
+#pragma vector = PORT1_VECTOR // Link the ISR to the vector
+__interrupt void P1_ISR() {
+  // Check if S2 caused the interrupt
+  if ((P1IFG & BUT2) != 0) {
+    button_pressed = 1; // trigger update_time
+    P1IFG &= ~BUT2;     // clear flag
+  }
+}
+
+// ** ISR for Timer_A0 **
+#pragma vector = TIMER0_A0_VECTOR
+__interrupt void Timer_A_ISR(void) {
+
+  timer_seconds++; // Count 1 second
+
+  // Check if we hit our target (e.g., 60 seconds)
+  if (timer_seconds >= 60) {
+    log_ready = 1;     // Ring the bell for the main loop!
+    timer_seconds = 0; // Reset the counter
   }
 }
 
@@ -455,27 +476,4 @@ void config_ACLK_to_32KHz_crystal() {
   } while ((CSCTL5 & LFXTOFFG) != 0);
   CSCTL0_H = 0; // Lock CS registers
   return;
-}
-
-// ** ISR for Part 3 **
-#pragma vector = PORT1_VECTOR // Link the ISR to the vector
-__interrupt void P1_ISR() {
-  // Check if S2 caused the interrupt
-  if ((P1IFG & BUT2) != 0) {
-    button_pressed = 1; // trigger update_time
-    P1IFG &= ~BUT2;     // clear flag
-  }
-}
-
-// ** ISR for Timer_A0 **
-#pragma vector = TIMER0_A0_VECTOR
-__interrupt void Timer_A_ISR(void) {
-
-  timer_seconds++; // Count 1 second
-
-  // Check if we hit our target (e.g., 60 seconds)
-  if (timer_seconds >= 60) {
-    log_ready = 1;     // Ring the bell for the main loop!
-    timer_seconds = 0; // Reset the counter
-  }
 }
