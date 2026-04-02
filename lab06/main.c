@@ -17,8 +17,6 @@
 #define redLED BIT0   // Red LED at P1.0
 #define greenLED BIT7 // Green LED at P9.7
 
- 
-
 // given functions
 void Initialize_UART_2(void);
 
@@ -106,7 +104,8 @@ void uart_write_string(char *str);
 // }
 
 // Part 6.3 Modifying the UART Configuration
-int main(void) {
+int main(void)
+{
   WDTCTL = WDTPW | WDTHOLD; // stop watchdog timer
   PM5CTL0 &= ~LOCKLPM5;
 
@@ -134,7 +133,8 @@ int main(void) {
   uart_write_string(short_str);
   uart_write_string(long_str);
 
-  for (;;) {
+  for (;;)
+  {
     P1OUT ^= redLED; // blink LED
 
     result = uart_read_char(); // listen for input
@@ -152,7 +152,8 @@ int main(void) {
 // 9600 baud, 8-bit data, LSB first, no parity bits, 1 stop bit
 // no flow control, oversampling reception
 // Clock: SMCLK @ 1 MHz (1,000,000 Hz)
-void Initialize_UART(void) {
+void Initialize_UART(void)
+{
   // Configure pins to UART functionality
   P3SEL1 &= ~(BIT4 | BIT5);
   P3SEL0 |= (BIT4 | BIT5);
@@ -173,13 +174,15 @@ void Initialize_UART(void) {
 // Configure UART to the custom configuration
 // 4800 baud, 8-bit data, LSB first, no parity bits, 1 stop bit
 // Clock: ACLK @ 32 KHz (32,768 Hz)
-void Initialize_UART_2(void) {
+void Initialize_UART_2(void)
+{
   // Configure LFXT pins (PJ.4 = XIN, PJ.5 = XOUT) for 32.768 kHz crystal
   P3SEL1 &= ~(BIT4 | BIT5);
   PJSEL0 |= BIT4 | BIT5;
 
   // Wait for LFXT to stabilize
-  do {
+  do
+  {
     CSCTL0_H = CSKEY_H;  // Unlock CS registers
     CSCTL5 &= ~LFXTOFFG; // Clear LFXT fault flag
     CSCTL0_H = 0;        // Lock CS registers
@@ -203,9 +206,11 @@ void Initialize_UART_2(void) {
 }
 
 // transmits a byte over UART
-void uart_write_char(unsigned char ch) {
+void uart_write_char(unsigned char ch)
+{
   // Wait for any ongoing transmission to complete
-  while ((FLAGS & TXFLAG) == 0) {
+  while ((FLAGS & TXFLAG) == 0)
+  {
   }
   // Copy the byte to the transmit buffer
   TXBUFFER = ch; // Tx flag goes to 0 and Tx begins!
@@ -213,7 +218,8 @@ void uart_write_char(unsigned char ch) {
 }
 
 // The function returns the byte; if none received, returns null character
-unsigned char uart_read_char(void) {
+unsigned char uart_read_char(void)
+{
   unsigned char temp;
   // Return null character (ASCII=0) if no byte was received
   if ((FLAGS & RXFLAG) == 0)
@@ -224,15 +230,19 @@ unsigned char uart_read_char(void) {
 }
 
 // Function transmits 16-bit unsigned integers
-void uart_write_uint16(unsigned int n) {
+void uart_write_uint16(unsigned int n)
+{
   char str[6]; // 5 digits + null term
   int i = 0, j, k = 0;
 
   // manually convert to string
-  if (n == 0) {
+  if (n == 0)
+  {
     str[i++] = '0';
-  } else
-    while (n > 0) {
+  }
+  else
+    while (n > 0)
+    {
       str[i++] = n % 10 + '0';
       n /= 10;
     }
@@ -240,7 +250,8 @@ void uart_write_uint16(unsigned int n) {
   str[i] = '\0';
 
   // Reverse the string to get the correct order
-  for (j = 0, k = i - 1; j < k; j++, k--) {
+  for (j = 0, k = i - 1; j < k; j++, k--)
+  {
     char temp = str[j];
     str[j] = str[k];
     str[k] = temp;
@@ -250,12 +261,14 @@ void uart_write_uint16(unsigned int n) {
 }
 
 // Function transmits each character of the string over UART.
-void uart_write_string(char *str) {
+void uart_write_string(char *str)
+{
   int i = 0;
   int n = strlen(str); // get length of input string
   if (n == 0)          // skip if empty
     return;
-  for (i = 0; i < n; i++) { // loop through chars abnd print
+  for (i = 0; i < n; i++)
+  { // loop through chars abnd print
     uart_write_char(str[i]);
   }
   uart_write_char('\n');

@@ -18,6 +18,8 @@
 #define BUT2 BIT2          // Button S2 at P1.2
 
 void Initialize_I2C();
+void Initialize_UART_2(); // setup using custom config with ACLK @ 32KHz
+
 void Initialize_UART();
 int i2c_read_word(unsigned char i2c_address, unsigned char i2c_reg,
                   unsigned int *data);
@@ -35,6 +37,7 @@ void config_ACLK_to_32KHz_crystal();
 char time[] = "12:00\t";
 volatile int button_pressed = 0; // flag for button press
 volatile int log_ready = 1;      // Start at 1 to log immediately on boot
+int log = 0;
 volatile int timer_seconds = 0;  // Counts the 1-second timer ticks
 
 // Part 7.1: Reading the Manufacturer ID and Device ID Registers
@@ -96,7 +99,8 @@ int main() {
   WDTCTL = WDTPW | WDTHOLD; // stop watchdog timer
   PM5CTL0 &= ~LOCKLPM5;
 
-  Initialize_UART();
+  Initialize_UART_2();
+  
   Initialize_I2C();
 
   // ** Button Setup **
@@ -144,8 +148,8 @@ int main() {
 
   for (;;) {
 
-    // 1. Did the timer say it's time to log?
-    if (log_ready == 1) {
+    // 1 second passed
+    if (log) {
       increment_time(time);
       // collect reading from sensor and convert to lux
       i2c_read_word(0x44, 0x00, &light_data);
@@ -166,6 +170,7 @@ int main() {
       uart_write_string("\r\n");
 
       log_ready = 0; // Reset flag until next timer cycle
+      log = 0;
     }
 
     if (button_pressed == 1) {
@@ -179,6 +184,35 @@ int main() {
     // up.
   }
   return 0;
+}
+
+void Initialize_UART_2(void) {
+  // Configure LFXT pins (PJ.4 = XIN, PJ.5 = XOUT) for 32.768 kHz crystal
+  P3SEL1 &= ~(BIT4 | BIT5);
+  PJSEL0 |= BIT4 | BIT5;
+
+  // Wait for LFXT to stabilize
+  do {
+    CSCTL0_H = CSKEY_H;  // Unlock CS registers
+    CSCTL5 &= ~LFXTOFFG; // Clear LFXT fault flag
+    CSCTL0_H = 0;        // Lock CS registers
+    SFRIFG1 &= ~OFIFG;   // Clear oscillator fault interrupt flag
+  } while (SFRIFG1 & OFIFG);
+
+  // Configure pins to UART functionality
+  P3SEL1 &= ~(BIT4 | BIT5);
+  P3SEL0 |= (BIT4 | BIT5);
+  // Main configuration register
+  UCA1CTLW0 = UCSWRST; // Engage reset; change all the fields to zero
+  // Most fields in this register, when set to zero, correspond to the
+  // popular configuration
+  UCA1CTLW0 |= UCSSEL__ACLK; // Set clock to ACLK
+  // 32768 / 4800 = 6.826
+  UCA1BRW = 6; // divider
+  // UCBRS = 0xEE = UCBRS3 (bit #3)
+  UCA1MCTLW = UCBRS7 | UCBRS6 | UCBRS5 | UCBRS3 | UCBRS2 | UCBRS1;
+  // Exit the reset state
+  UCA1CTLW0 &= ~UCSWRST;
 }
 
 // make sure the time string is in 12-hour format
@@ -285,13 +319,14 @@ __interrupt void P1_ISR() {
 #pragma vector = TIMER0_A0_VECTOR
 __interrupt void Timer_A_ISR(void) {
 
-  timer_seconds++; // Count 1 second
+  log = 1;
+  // timer_seconds++; // Count 1 second
 
-  // Check if we hit our target (e.g., 60 seconds)
-  if (timer_seconds >= 60) {
-    log_ready = 1;     // Ring the bell for the main loop!
-    timer_seconds = 0; // Reset the counter
-  }
+  // // Check if we hit our target (e.g., 60 seconds)
+  // if (timer_seconds = 1) {
+  //   log_ready = 1;     // Ring the bell for the main loop!
+  //   timer_seconds = 0; // Reset the counter
+  // }
 }
 
 // Configure UART to the popular configuration
